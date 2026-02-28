@@ -1,0 +1,102 @@
+# ==============================================================================
+# Gocial - Docker Compose (root)
+#
+# Orchestrates backend + database for local development.
+# Frontend (React Native) runs natively on device/emulator.
+#
+# Usage:
+#   docker-compose up              # Start backend + DB + redis
+#   docker-compose up -d           # Background
+#   docker-compose up --build      # Rebuild after changes
+#   docker-compose down            # Stop
+#   docker-compose down -v         # Stop + wipe volumes
+#   docker-compose run frontend-ci # Run frontend type-check/lint
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------------------
+  # Gocial API (Flask)
+  # -------------------------------------------------------------------------
+  api:
+    build:
+      context: ./GocialBackend
+      target: development
+    container_name: gocial-api
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./GocialBackend:/app
+      - /app/__pycache__
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=True
+      - DATABASE_URL=postgresql://gocial:gocial@db:5432/gocial
+      - SECRET_KEY=dev-secret-change-in-prod
+      - JWT_SECRET_KEY=jwt-dev-secret-change-in-prod
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # PostgreSQL
+  # -------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: gocial-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=gocial
+      - POSTGRES_PASSWORD=gocial
+      - POSTGRES_DB=gocial
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gocial"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # Redis (cache & rate limiting)
+  # -------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: gocial-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # Adminer (DB GUI — dev only)
+  # -------------------------------------------------------------------------
+  adminer:
+    image: adminer
+    container_name: gocial-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # Frontend CI (lint / type-check / test)
+  # Run with: docker-compose run frontend-ci
+  # -------------------------------------------------------------------------
+  frontend-ci:
+    build:
+      context: ./GocialFrontMobile
+    container_name: gocial-frontend-ci
+    profiles:
+      - ci
+    command: npx tsc --noEmit
+
+volumes:
+  postgres_data:
+  redis_data:

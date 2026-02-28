@@ -1,0 +1,12 @@
+# Procfile for Heroku / Railway / Render deployments
+#
+# This tells the platform how to run your app
+
+# Run migrations before starting the web server
+release: flask db upgrade
+
+# Web server (use gunicorn for production)
+web: gunicorn run:app --bind 0.0.0.0:$PORT --workers 4 --threads 2 --log-level info
+
+# Optional: Background worker for async tasks (if using Celery)
+# worker: celery -A app.celery worker --loglevel=info
