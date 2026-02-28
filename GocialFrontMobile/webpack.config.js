@@ -2,14 +2,47 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const appDirectory = __dirname;
+
+// Packages from node_modules that need to be compiled by Babel (they ship untranspiled ESM or JSX)
+const compileNodeModules = [
+  'react-native-vector-icons',
+  'react-native-linear-gradient',
+  'react-native-reanimated',
+  'react-native-gesture-handler',
+  'react-native-screens',
+  'react-native-safe-area-context',
+  'react-native-paper',
+  'react-native-modal',
+  'react-native-toast-message',
+  'react-native-calendars',
+  'react-native-tab-view',
+  'react-native-pager-view',
+  '@react-navigation',
+  '@react-native-async-storage',
+  '@react-native-masked-view',
+  'react-native-svg',
+  'react-native-web',
+].join('|');
+
 const babelLoaderConfig = {
-  test: /\.(ts|tsx|js|jsx)$/,
-  exclude: /node_modules\/(?!(react-native-vector-icons|react-native-linear-gradient|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-paper|react-native-modal|react-native-toast-message|react-native-calendars|react-native-tab-view|react-native-pager-view|@react-navigation|@react-native-async-storage|react-native-svg)\/).*/,
+  test: /\.(ts|tsx|js|jsx|mjs)$/,
+  exclude: new RegExp(`node_modules/(?!(${compileNodeModules})/).*`),
   use: {
     loader: 'babel-loader',
     options: {
-      presets: ['@react-native/babel-preset'],
-      plugins: ['react-native-web'],
+      sourceType: 'unambiguous',
+      presets: [
+        ['@babel/preset-env', { targets: { browsers: ['last 2 versions'] } }],
+        '@babel/preset-typescript',
+        ['@babel/preset-react', { runtime: 'automatic' }],
+      ],
+      plugins: [
+        'react-native-web',
+        '@babel/plugin-proposal-export-namespace-from',
+        ['@babel/plugin-transform-class-properties', { loose: true }],
+        ['@babel/plugin-transform-private-methods', { loose: true }],
+        ['@babel/plugin-transform-private-property-in-object', { loose: true }],
+      ],
     },
   },
 };
