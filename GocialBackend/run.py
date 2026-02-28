@@ -18,10 +18,15 @@ app = create_app(env)
 
 
 def init_db():
-    """Initialize database tables."""
+    """Initialize database tables (only if no migration history)."""
     with app.app_context():
-        db.create_all()
-        print('Database initialized')
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if not inspector.has_table('alembic_version'):
+            db.create_all()
+            print('Database tables created (no migrations found)')
+        else:
+            print('Alembic migrations detected — skipping db.create_all()')
 
 
 if __name__ == '__main__':

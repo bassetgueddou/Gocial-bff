@@ -7,11 +7,7 @@ All the stuff that talks to third-party services.
 
 import os
 from flask import current_app
-from flask_mail import Mail, Message
-
-
-# Mail instance - initialized in app factory
-mail = Mail()
+from flask_mail import Message
 
 
 # ---------------------------------------------------------------------
@@ -25,13 +21,14 @@ def send_email(to, subject, body, html=None):
     Returns True on success, False on failure.
     """
     try:
+        from app import mail as app_mail
         msg = Message(
             subject=subject,
             recipients=[to] if isinstance(to, str) else to,
             body=body,
             html=html,
         )
-        mail.send(msg)
+        app_mail.send(msg)
         return True
     except Exception as e:
         current_app.logger.error(f'Email send failed: {e}')

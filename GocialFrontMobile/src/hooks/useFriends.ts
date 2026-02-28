@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { friendsService } from '../services/friends';
+import { friendService } from '../services/friends';
 import type { Friendship } from '../types';
 
 export const useFriends = () => {
@@ -13,9 +13,9 @@ export const useFriends = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await friendsService.getFriends();
+      const data = await friendService.getFriends();
       const list = Array.isArray(data) ? data : data.friends || [];
-      setFriends(list);
+      setFriends(list as any);
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Impossible de charger les amis.');
     } finally {
@@ -25,9 +25,9 @@ export const useFriends = () => {
 
   const fetchRequests = useCallback(async () => {
     try {
-      const data = await friendsService.getRequests();
-      const list = Array.isArray(data) ? data : data.requests || [];
-      setRequests(list);
+      const data = await friendService.getRequests();
+      const list = Array.isArray(data) ? data : data.received || [];
+      setRequests(list as any);
     } catch {
       // Silent
     }
@@ -35,7 +35,7 @@ export const useFriends = () => {
 
   const fetchBlocked = useCallback(async () => {
     try {
-      const data = await friendsService.getBlocked();
+      const data = await friendService.getBlocked();
       const list = Array.isArray(data) ? data : data.blocked || [];
       setBlocked(list);
     } catch {
@@ -51,7 +51,7 @@ export const useFriends = () => {
 
   const acceptRequest = useCallback(async (friendshipId: number) => {
     try {
-      await friendsService.acceptRequest(friendshipId);
+      await friendService.acceptRequest(friendshipId);
       setRequests((prev) => prev.filter((r) => r.id !== friendshipId));
       fetchFriends(); // Refresh friends list
     } catch {
@@ -61,7 +61,7 @@ export const useFriends = () => {
 
   const rejectRequest = useCallback(async (friendshipId: number) => {
     try {
-      await friendsService.rejectRequest(friendshipId);
+      await friendService.rejectRequest(friendshipId);
       setRequests((prev) => prev.filter((r) => r.id !== friendshipId));
     } catch {
       // Silent
@@ -70,7 +70,7 @@ export const useFriends = () => {
 
   const removeFriend = useCallback(async (friendshipId: number) => {
     try {
-      await friendsService.removeFriend(friendshipId);
+      await friendService.removeFriend(friendshipId);
       setFriends((prev) => prev.filter((f) => f.id !== friendshipId));
     } catch {
       // Silent
@@ -79,7 +79,7 @@ export const useFriends = () => {
 
   const blockUser = useCallback(async (userId: number) => {
     try {
-      await friendsService.blockUser(userId);
+      await friendService.blockUser(userId);
       fetchBlocked();
       fetchFriends();
     } catch {
@@ -89,7 +89,7 @@ export const useFriends = () => {
 
   const unblockUser = useCallback(async (userId: number) => {
     try {
-      await friendsService.unblockUser(userId);
+      await friendService.unblockUser(userId);
       setBlocked((prev) => prev.filter((b) => b.id !== userId));
     } catch {
       // Silent
@@ -98,7 +98,7 @@ export const useFriends = () => {
 
   const sendRequest = useCallback(async (userId: number) => {
     try {
-      await friendsService.sendRequest(userId);
+      await friendService.sendRequest(userId);
       fetchRequests();
     } catch {
       // Silent

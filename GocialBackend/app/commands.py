@@ -143,11 +143,11 @@ def seed(users, activities):
             is_admin=True,
             is_verified=True,
         )
-        admin.set_password('admin123')
+        admin.set_password('Admin123!')
         admin.add_role(admin_role)
         db.session.add(admin)
         db.session.commit()
-        click.echo(f'✓ Created admin user (admin@gocial.app / admin123)')
+        click.echo(f'✓ Created admin user (admin@gocial.app / Admin123!)')
     
     # Create test users
     cities = ['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Toulouse', 'Nantes']
@@ -167,7 +167,7 @@ def seed(users, activities):
                 is_verified=random.choice([True, True, False]),
                 is_active=True,
             )
-            user.set_password('test123')
+            user.set_password('Test123!')
             db.session.add(user)
             created_users.append(user)
     

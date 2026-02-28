@@ -9,7 +9,7 @@ def test_health_check(client):
     response = client.get('/health')
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert data['status'] == 'ok'
+    assert data['status'] == 'healthy'
 
 
 def test_register_person(client):
@@ -17,7 +17,7 @@ def test_register_person(client):
     response = client.post('/api/auth/register', 
         data=json.dumps({
             'email': 'test@example.com',
-            'password': 'password123',
+            'password': 'Password123',
             'user_type': 'person',
             'first_name': 'Test',
             'pseudo': 'testuser'
@@ -37,7 +37,7 @@ def test_register_duplicate_email(client):
     client.post('/api/auth/register',
         data=json.dumps({
             'email': 'test@example.com',
-            'password': 'password123',
+            'password': 'Password123',
             'user_type': 'person'
         }),
         content_type='application/json'
@@ -47,7 +47,7 @@ def test_register_duplicate_email(client):
     response = client.post('/api/auth/register',
         data=json.dumps({
             'email': 'test@example.com',
-            'password': 'password456',
+            'password': 'Password456',
             'user_type': 'person'
         }),
         content_type='application/json'
@@ -62,7 +62,7 @@ def test_login(client):
     client.post('/api/auth/register',
         data=json.dumps({
             'email': 'test@example.com',
-            'password': 'password123',
+            'password': 'Password123',
             'user_type': 'person'
         }),
         content_type='application/json'
@@ -72,7 +72,7 @@ def test_login(client):
     response = client.post('/api/auth/login',
         data=json.dumps({
             'email': 'test@example.com',
-            'password': 'password123'
+            'password': 'Password123'
         }),
         content_type='application/json'
     )
@@ -88,7 +88,7 @@ def test_login_wrong_password(client):
     client.post('/api/auth/register',
         data=json.dumps({
             'email': 'test@example.com',
-            'password': 'password123',
+            'password': 'Password123',
             'user_type': 'person'
         }),
         content_type='application/json'

@@ -42,10 +42,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } catch (err) {
         // Token expired or invalid — just clear everything
-        await AsyncStorage.multiRemove([
-          STORAGE_KEYS.ACCESS_TOKEN,
-          STORAGE_KEYS.REFRESH_TOKEN,
-          STORAGE_KEYS.USER,
+        await Promise.all([
+          AsyncStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN),
+          AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
+          AsyncStorage.removeItem(STORAGE_KEYS.USER),
         ]);
         setUser(null);
       } finally {
@@ -84,10 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Server might be unreachable, that's fine
     }
 
-    await AsyncStorage.multiRemove([
-      STORAGE_KEYS.ACCESS_TOKEN,
-      STORAGE_KEYS.REFRESH_TOKEN,
-      STORAGE_KEYS.USER,
+    await Promise.all([
+      AsyncStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN),
+      AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
+      AsyncStorage.removeItem(STORAGE_KEYS.USER),
     ]);
 
     setUser(null);

@@ -53,6 +53,7 @@ export interface ActivityHost {
   id: number;
   pseudo: string | null;
   first_name: string | null;
+  last_name: string | null;
   avatar_url: string | null;
   is_verified: boolean;
   user_type: string;
@@ -83,9 +84,11 @@ export interface Activity {
   visibility: string;
   image_url: string | null;
   likes_count: number;
+  location?: string;
   status: string;
   is_full: boolean;
   is_past: boolean;
+  is_liked?: boolean;
   created_at: string;
   host?: ActivityHost;
   visio_url?: string;
@@ -117,21 +120,27 @@ export interface Participation {
 
 export interface Friendship {
   id: number;
-  status: 'pending' | 'accepted' | 'rejected' | 'blocked';
-  created_at: string;
+  friendship_id?: number;
+  status?: 'pending' | 'accepted' | 'rejected' | 'blocked';
+  since?: string;
+  requested_at?: string;
+  created_at?: string;
   friend?: UserPublic;
+  user?: UserPublic;
 }
 
 export interface Message {
   id: number;
-  sender_id: number;
-  recipient_id: number;
+  sender_id?: number;
+  recipient_id?: number;
   content: string;
-  message_type: string;
-  is_request: boolean;
-  is_read: boolean;
-  created_at: string;
-  is_mine: boolean | null;
+  message_type?: string;
+  is_request?: boolean;
+  is_read?: boolean;
+  created_at?: string;
+  sent_at?: string;
+  sent_by_me?: boolean;
+  is_mine?: boolean | null;
   sender?: UserPublic;
 }
 

@@ -22,7 +22,7 @@ interface EventCardProps {
     title: string;
     date: string;
     location: string;
-    category: string;
+    category: string | null;
     currentParticipants: number;
     totalParticipants: number;
     userInitials: string;

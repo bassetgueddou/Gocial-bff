@@ -29,7 +29,7 @@ const formatDate = (iso: string) => {
     return `${days[d.getDay()]}. ${d.getDate()} ${months[d.getMonth()]}. - ${hh}:${mm}`;
 };
 
-const getInitials = (first?: string, last?: string) => {
+const getInitials = (first?: string | null, last?: string | null) => {
     const f = (first || '?')[0].toUpperCase();
     const l = (last || '?')[0].toUpperCase();
     return `${f}${l}`;

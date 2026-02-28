@@ -6,6 +6,7 @@ import { ThemeProvider } from "./screens/ThemeContext";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import AppNavigator from "./navigation/AppNavigator";
 import Toast from 'react-native-toast-message';
+import ErrorBoundary from "./src/components/ErrorBoundary";
 
 const SplashScreen = () => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#004C82' }}>
@@ -32,18 +33,15 @@ const AppContent = () => {
 };
 
 const App = () => {
-  try {
-    return (
+  return (
+    <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
           <AppContent />
         </AuthProvider>
       </ThemeProvider>
-    );
-  } catch (error) {
-    console.log("Erreur dans App :", error);
-    return <View><Text>Erreur détectée</Text></View>;
-  }
+    </ErrorBoundary>
+  );
 };
 
 export default App;

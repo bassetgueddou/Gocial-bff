@@ -21,7 +21,7 @@ interface EventCardProps {
     image: any;
     title: string;
     date: string;
-    category: string;
+    category: string | null;
     currentParticipants: number;
     totalParticipants: number;
     userInitials: string;

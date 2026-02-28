@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import MessageModal from "./Message/MessageModal";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../src/contexts/AuthContext";
 
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
@@ -21,7 +22,12 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ title }) => {
     const navigation = useNavigation<NavigationProp>();
+    const { user } = useAuth();
     const [modalMessageVisible, setModalMessageVisible] = useState(false);
+
+    const initials = user
+        ? `${(user.first_name || '')[0] || ''}${(user.last_name || user.pseudo || '')[0] || ''}`.toUpperCase() || '?'
+        : '?';
 
     return (
         <LinearGradient
@@ -35,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
                 <View className="flex-row items-center justify-between p-4">
                     {/* Avatar */}
                     <TouchableOpacity onPress={() => navigation.navigate("GeneralParameter")} className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center">
-                        <Text className="text-black font-bold">EL</Text>
+                        <Text className="text-black font-bold">{initials}</Text>
                     </TouchableOpacity>
 
                     {/* Title */}

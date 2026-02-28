@@ -131,7 +131,7 @@ def get_activities():
     
     query = query.filter(
         (Activity.visibility == 'public') |
-        (Activity.visibility == 'friends_only') & (Activity.host_id.in_(friend_ids)) |
+        ((Activity.visibility == 'friends') & (Activity.host_id.in_(friend_ids))) |
         (Activity.host_id == current_user_id)
     )
     
@@ -293,7 +293,7 @@ def create_activity():
         activity_type=activity_type,
         date=activity_date,
         description=data.get('description', '').strip() or None,
-        category=data.get('category', '').strip() or None,
+        category=data.get('category', '').strip() or 'diverse',
         max_participants=data.get('max_participants'),
         price=data.get('price'),
         visibility=data.get('visibility', 'public'),

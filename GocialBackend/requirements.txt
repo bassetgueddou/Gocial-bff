@@ -10,28 +10,19 @@ Flask-Mail==0.9.1
 # Base de données
 SQLAlchemy==2.0.25
 psycopg2-binary==2.9.9  # PostgreSQL
-PyMySQL==1.1.0  # MySQL (optionnel)
-
-# Validation et sérialization
-marshmallow==3.20.2
-marshmallow-sqlalchemy==0.30.0
 
 # Sécurité
-bcrypt==4.1.2
 python-dotenv==1.0.1
 
 # Utils
-Pillow==10.2.0  # Traitement images
 gunicorn==21.2.0  # Serveur production
 python-dateutil==2.8.2
-requests==2.31.0
-
-# Géolocalisation
-geopy==2.4.1
 
 # Tests
 pytest==8.0.0
 pytest-flask==1.3.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
 
 # Dev
 black==24.1.1

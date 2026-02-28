@@ -93,10 +93,10 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
 
         // Refresh failed - clear tokens, user needs to log in again
-        await AsyncStorage.multiRemove([
-          STORAGE_KEYS.ACCESS_TOKEN,
-          STORAGE_KEYS.REFRESH_TOKEN,
-          STORAGE_KEYS.USER,
+        await Promise.all([
+          AsyncStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN),
+          AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
+          AsyncStorage.removeItem(STORAGE_KEYS.USER),
         ]);
 
         return Promise.reject(refreshError);

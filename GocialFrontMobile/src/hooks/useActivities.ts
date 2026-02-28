@@ -26,7 +26,7 @@ export const useActivities = (options: UseActivitiesOptions = {}) => {
 
       const filters: Record<string, any> = {};
       if (mode) {
-        filters.mode = mode;
+        filters.type = mode;
       }
 
       const data = await activityService.getActivities(filters);

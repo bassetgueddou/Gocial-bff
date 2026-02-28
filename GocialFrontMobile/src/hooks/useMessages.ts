@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { messagesService } from '../services/messages';
+import { messageService } from '../services/messages';
 import type { Conversation, Message } from '../types';
 
 export const useMessages = () => {
@@ -12,7 +12,7 @@ export const useMessages = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await messagesService.getConversations();
+      const data = await messageService.getConversations();
       const list = Array.isArray(data) ? data : data.conversations || [];
       setConversations(list);
     } catch (err: any) {
@@ -24,8 +24,8 @@ export const useMessages = () => {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const data = await messagesService.getUnreadCount();
-      setUnreadCount(data.count || 0);
+      const data = await messageService.getUnreadCount();
+      setUnreadCount(data.total_unread || 0);
     } catch {
       // Silent
     }
@@ -38,7 +38,7 @@ export const useMessages = () => {
 
   const sendMessage = useCallback(async (recipientId: number, content: string) => {
     try {
-      await messagesService.sendMessage(recipientId, content);
+      await messageService.sendMessage(recipientId, content);
       fetchConversations(); // Refresh
     } catch {
       // Silent
@@ -47,7 +47,7 @@ export const useMessages = () => {
 
   const markAsRead = useCallback(async (partnerId: number) => {
     try {
-      await messagesService.markAsRead(partnerId);
+      await messageService.markAsRead(partnerId);
       fetchUnreadCount();
     } catch {
       // Silent
@@ -74,9 +74,9 @@ export const useConversation = (partnerId: number) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await messagesService.getMessages(partnerId);
+      const data = await messageService.getMessages(partnerId);
       const list = Array.isArray(data) ? data : data.messages || [];
-      setMessages(list);
+      setMessages(list as any);
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Impossible de charger les messages.');
     } finally {
@@ -90,8 +90,8 @@ export const useConversation = (partnerId: number) => {
 
   const send = useCallback(async (content: string) => {
     try {
-      const newMsg = await messagesService.sendMessage(partnerId, content);
-      setMessages((prev) => [...prev, newMsg]);
+      const newMsg = await messageService.sendMessage(partnerId, content);
+      setMessages((prev) => [...prev, newMsg?.data ?? newMsg] as any);
     } catch {
       // Silent
     }

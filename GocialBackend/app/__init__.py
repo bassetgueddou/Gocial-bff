@@ -72,7 +72,11 @@ def _init_extensions(app):
     mail.init_app(app)
     
     # CORS setup - allow mobile app & web to hit our API
-    allowed_origins = app.config.get('CORS_ORIGINS', '*')
+    raw_origins = app.config.get('CORS_ORIGINS', '*')
+    if isinstance(raw_origins, str) and ',' in raw_origins:
+        allowed_origins = [o.strip() for o in raw_origins.split(',')]
+    else:
+        allowed_origins = raw_origins
     CORS(app, origins=allowed_origins, supports_credentials=True)
     
     # JWT error handlers for better DX

@@ -286,8 +286,8 @@ const RegisterPerson: React.FC = () => {
                                     birth_date: birthDate || undefined,
                                     gender: selectedGender || undefined,
                                     city: city.trim() || undefined,
-                                    phone_number: formattedNumber || undefined,
-                                    account_type: 'person',
+                                    phone: formattedNumber || undefined,
+                                    user_type: 'person',
                                 });
                                 // Auth context handles navigation automatically
                             } catch (err: any) {
