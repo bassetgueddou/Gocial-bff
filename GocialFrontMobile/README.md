@@ -1,97 +1,192 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Gocial
 
-# Getting Started
+## Prerequisites
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+| Tool | Version | Install |
+|------|---------|---------|
+| Node.js | >= 18 | https://nodejs.org |
+| Python | >= 3.10 | https://python.org |
+| Xcode | >= 15 | Mac App Store |
+| CocoaPods | latest | `sudo gem install cocoapods` |
+| Android Studio | latest | https://developer.android.com/studio |
+| Git | latest | https://git-scm.com |
 
-## Step 1: Start Metro
+> **iOS builds require macOS with Xcode installed.**
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Follow the full React Native environment setup: https://reactnative.dev/docs/set-up-your-environment
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+---
+
+## 1. Clone
 
 ```sh
-# Using npm
+git clone https://github.com/bassetgueddou/Gocial-bff.git
+cd Gocial-bff
+```
+
+---
+
+## 2. Backend Setup
+
+```sh
+cd GocialBackend
+
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate it
+# macOS / Linux:
+source .venv/bin/activate
+# Windows:
+.venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create .env from example
+cp .env.example .env
+# Edit .env and set your own SECRET_KEY and JWT_SECRET_KEY
+
+# Initialize database
+flask db upgrade
+
+# (Optional) Seed test data
+flask seed
+
+# Start backend
+flask run
+```
+
+Backend runs on **http://localhost:5000**
+
+---
+
+## 3. Frontend Setup
+
+```sh
+cd GocialFrontMobile
+
+# Install JS dependencies
+npm install --legacy-peer-deps
+```
+
+---
+
+## 4. Run on iOS (macOS only)
+
+```sh
+# Install CocoaPods dependencies (first time or after native dep changes)
+cd ios
+bundle install
+bundle exec pod install
+cd ..
+
+# Start Metro bundler (in a separate terminal)
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Build and run on iOS Simulator
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+**Troubleshooting iOS:**
+- If `pod install` fails, try `cd ios && pod install --repo-update`
+- If build fails in Xcode, open `ios/GocialFrontMobile.xcworkspace` (not `.xcodeproj`), select a simulator, and hit Run
+- To run on a physical device, you need an Apple Developer account and must set the signing team in Xcode
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+---
 
-## Step 3: Modify your app
+## 5. Run on Android
 
-Now that you have successfully run the app, let's make changes!
+```sh
+# Start Metro bundler (if not already running)
+npm start
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+# Build and run on Android Emulator
+npm run android
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+> Make sure an Android emulator is running or a device is connected (`adb devices` to check).
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+---
 
-## Congratulations! :tada:
+## 6. Run on Web (experimental)
 
-You've successfully run and modified your React Native App. :partying_face:
+```sh
+npm run web
+```
 
-### Now what?
+Opens on **http://localhost:3000**
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+---
 
-# Troubleshooting
+## Available Scripts
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+| Command | Description |
+|---------|-------------|
+| `npm start` | Start Metro bundler |
+| `npm run ios` | Build & run on iOS |
+| `npm run android` | Build & run on Android |
+| `npm run web` | Start Vite dev server (web) |
+| `npm test` | Run tests |
+| `npm run lint` | Run ESLint |
 
-# Learn More
+---
 
-To learn more about React Native, take a look at the following resources:
+## Project Structure
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+```
+Gocial-bff/
+├── GocialBackend/          # Flask API
+│   ├── app/                # Routes, models, services
+│   ├── migrations/         # DB migrations (Alembic)
+│   ├── tests/              # Backend tests
+│   ├── run.py              # Entry point
+│   └── requirements.txt
+│
+└── GocialFrontMobile/      # React Native app
+    ├── screens/            # All screens
+    ├── navigation/         # React Navigation config
+    ├── src/
+    │   ├── contexts/       # Auth context
+    │   ├── hooks/          # Custom hooks
+    │   ├── services/       # API service (Axios)
+    │   └── types/          # TypeScript types
+    ├── App.tsx             # Root component
+    └── index.js            # Entry point
+```
+
+---
+
+## Environment Variables
+
+### Backend (`GocialBackend/.env`)
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | Yes | Flask secret key |
+| `JWT_SECRET_KEY` | Yes | JWT signing key |
+| `DATABASE_URL` | Yes | DB connection string (default: SQLite) |
+| `CORS_ORIGINS` | Yes | Comma-separated allowed origins |
+| `MAIL_USERNAME` | No | Email for notifications |
+| `MAIL_PASSWORD` | No | Email app password |
+
+### Frontend
+
+The API URL is configured in `src/services/api.ts`.
+- **Android emulator:** uses `10.0.2.2:5000` (maps to host localhost)
+- **iOS simulator:** uses `localhost:5000`
+
+---
+
+## Common Issues
+
+| Problem | Solution |
+|---------|----------|
+| `pod install` fails | `cd ios && pod install --repo-update` |
+| Metro cache issues | `npx react-native start --reset-cache` |
+| Android build fails | `cd android && ./gradlew clean` then rebuild |
+| Port 8081 in use | `lsof -ti:8081 | xargs kill -9` (macOS/Linux) |
+| White screen on app | Check Metro terminal for errors, reload with R |
+| AsyncStorage error on Android | Run `cd android && ./gradlew clean` and rebuild |
