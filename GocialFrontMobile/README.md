@@ -5,13 +5,14 @@
 | Tool | Version | Install |
 |------|---------|---------|
 | Node.js | >= 18 | https://nodejs.org |
-| Python | >= 3.10 | https://python.org |
+| Docker | latest | https://docker.com/get-started *(for backend)* |
 | Xcode | >= 15 | Mac App Store |
 | CocoaPods | latest | `sudo gem install cocoapods` |
 | Android Studio | latest | https://developer.android.com/studio |
 | Git | latest | https://git-scm.com |
 
 > **iOS builds require macOS with Xcode installed.**
+> Python is only needed if you run the backend without Docker.
 
 Follow the full React Native environment setup: https://reactnative.dev/docs/set-up-your-environment
 
@@ -27,6 +28,39 @@ cd Gocial-bff
 ---
 
 ## 2. Backend Setup
+
+### Option A: Docker (recommended)
+
+```sh
+cd GocialBackend
+
+# Start API + PostgreSQL + Redis + Adminer
+docker-compose up --build
+```
+
+This starts:
+
+| Service | URL |
+|---------|-----|
+| API | http://localhost:5000 |
+| PostgreSQL | localhost:5432 |
+| Redis | localhost:6379 |
+| Adminer (DB GUI) | http://localhost:8080 |
+
+To run in background: `docker-compose up -d`
+To stop: `docker-compose down`
+To see logs: `docker-compose logs -f api`
+
+Once running, init the database:
+
+```sh
+docker exec gocial-api flask db upgrade
+docker exec gocial-api flask seed   # optional: seed test data
+```
+
+### Option B: Without Docker
+
+Requires Python >= 3.10.
 
 ```sh
 cd GocialBackend
@@ -160,6 +194,8 @@ Gocial-bff/
 ## Environment Variables
 
 ### Backend (`GocialBackend/.env`)
+
+> With Docker, env vars are pre-configured in `docker-compose.yml`. Only needed if running without Docker.
 
 Copy `.env.example` to `.env` and fill in:
 

@@ -136,8 +136,8 @@ def register():
         return jsonify({'error': 'Registration failed. Please try again.'}), 500
     
     # Generate tokens
-    access_token = create_access_token(identity=user.id)
-    refresh_token = create_refresh_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
     
     return jsonify({
         'message': 'Account created successfully',
@@ -186,8 +186,8 @@ def login():
     db.session.commit()
     
     # Generate fresh tokens
-    access_token = create_access_token(identity=user.id)
-    refresh_token = create_refresh_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
     
     return jsonify({
         'message': 'Welcome back!',
