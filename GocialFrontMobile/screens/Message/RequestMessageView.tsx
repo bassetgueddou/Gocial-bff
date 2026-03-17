@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
     TouchableOpacity,
-    Dimensions,
     FlatList,
+    ActivityIndicator,
+    Image,
 } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "../ThemeContext";
@@ -12,31 +13,14 @@ import Premium from "../Notification/Premium";
 import RequestTypeMessageView from "./RequestTypeMessageView";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { messageService } from "../../src/services/messages";
+import dayjs from "dayjs";
 
 type RootStackParamList = {
-  Premium: undefined;
+    Premium: undefined;
 };
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
-
-const { width, height } = Dimensions.get("window");
-
-interface Message {
-    id: string;
-    name: string;
-    initials: string;
-    message: string;
-    date: string;
-    unread: boolean;
-    avatarColor: string;
-    borderColor: string;
-}
-
-const messages: Message[] = [
-    { id: "1", name: "Cécile Edend", initials: "CE", message: "Bonsoir", date: "lun. - 20h00", unread: false, avatarColor: "bg-blue-400", borderColor: "border-green-400" },
-    { id: "2", name: "Quentin Dupont", initials: "QD", message: "Je suis là à 19h.", date: "2 oct. - 20h00", unread: true, avatarColor: "bg-blue-400", borderColor: "border-gray-300" },
-    { id: "3", name: "Caroline Frank", initials: "CF", message: "Hello World !", date: "01/09/2024", unread: true, avatarColor: "bg-blue-400", borderColor: "border-gray-300" },
-];
 
 interface RequestMessageViewProps {
     onClose: () => void;
@@ -45,59 +29,107 @@ interface RequestMessageViewProps {
 const RequestMessageView: React.FC<RequestMessageViewProps> = ({ onClose }) => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
-    const [isRequestTypeMessageViewVisible, setIsRequestTypeMessageViewVisible] = useState(false);
+    const [requests, setRequests] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedRequest, setSelectedRequest] = useState<any>(null);
+
+    const fetchRequests = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await messageService.getRequests();
+            setRequests(data.requests || []);
+        } catch {
+            setRequests([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
+
+    const getInitials = (req: any) => {
+        const u = req.sender || req.user || req;
+        const f = (u.first_name || u.pseudo || "")[0] || "";
+        const l = (u.last_name || "")[0] || "";
+        return (f + l).toUpperCase() || "?";
+    };
+
+    const getName = (req: any) => {
+        const u = req.sender || req.user || req;
+        return u.pseudo || `${u.first_name || ""} ${u.last_name || ""}`.trim() || "Utilisateur";
+    };
+
+    if (selectedRequest) {
+        const u = selectedRequest.sender || selectedRequest.user || selectedRequest;
+        return (
+            <RequestTypeMessageView
+                onClose={() => { setSelectedRequest(null); fetchRequests(); }}
+                senderId={u.id}
+                senderName={getName(selectedRequest)}
+                senderInitials={getInitials(selectedRequest)}
+            />
+        );
+    }
 
     return (
         <View className="flex-1">
+            <View className="flex-row justify-center mb-8">
+                <TouchableOpacity onPress={onClose} className="relative right-[5.2rem]">
+                    <MaterialIcons name="close" size={25} color={isDarkMode ? "white" : "black"} />
+                </TouchableOpacity>
+                <View className="flex-row items-center justify-center space-x-2">
+                    <Text className={`text-lg font-bold mr-3 ${isDarkMode ? "text-white" : "text-black"}`}>Demandes de messages</Text>
+                </View>
+            </View>
 
-            {isRequestTypeMessageViewVisible ? (
-                <RequestTypeMessageView
-                    onClose={() => setIsRequestTypeMessageViewVisible(false)}
-                />
+            <Premium onPress={() => navigation.navigate("Premium")} />
+
+            {loading ? (
+                <View className="flex-1 items-center justify-center">
+                    <ActivityIndicator size="large" color="#065C98" />
+                </View>
             ) : (
-                <>
-                    <View className="flex-row justify-center mb-8">
-                        {/* Bouton de fermeture aligné à gauche */}
-                        <TouchableOpacity onPress={onClose} className="relative right-[5.2rem]">
-                            <MaterialIcons name="close" size={25} color={isDarkMode ? "white" : "black"} />
-                        </TouchableOpacity>
+                <FlatList
+                    className="mt-3"
+                    data={requests}
+                    keyExtractor={(item: any) => String(item.id || item.sender?.id || Math.random())}
+                    renderItem={({ item }) => {
+                        const name = getName(item);
+                        const init = getInitials(item);
+                        const sender = item.sender || item.user || item;
+                        const lastMsg = item.last_message?.content || item.content || "";
+                        const lastDate = item.last_message?.sent_at || item.sent_at || "";
 
-                        {/* Icône et texte */}
-                        <View className="flex-row items-center justify-center space-x-2">
-                            <Text className={`text-lg font-bold mr-3 ${isDarkMode ? "text-white" : "text-black"}`}>Demandes de messages</Text>
-                        </View>
-                    </View>
-
-                    <Premium onPress={() => navigation.navigate("Premium")} />
-
-
-                    <FlatList
-                        className="mt-3"
-                        data={messages}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity onPress={() => setIsRequestTypeMessageViewVisible(true)}
-                                className="flex-row items-center py-3 px-1">
-                                {/* Avatar avec initiales */}
-                                <View className={`w-12 h-12 ${item.avatarColor} rounded-full border-2 ${item.borderColor} flex items-center justify-center`}>
-                                    <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold`}>{item.initials}</Text>
-                                </View>
-
-                                {/* Infos du message */}
+                        return (
+                            <TouchableOpacity
+                                onPress={() => setSelectedRequest(item)}
+                                className="flex-row items-center py-3 px-1"
+                            >
+                                {sender.avatar_url ? (
+                                    <Image source={{ uri: sender.avatar_url }} className="w-12 h-12 rounded-full" />
+                                ) : (
+                                    <View className="w-12 h-12 bg-blue-400 rounded-full border-2 border-gray-300 flex items-center justify-center">
+                                        <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold`}>{init}</Text>
+                                    </View>
+                                )}
                                 <View className="flex-1 ml-3">
-                                    <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold`}>{item.name}</Text>
-                                    <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{item.message}</Text>
+                                    <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold`}>{name}</Text>
+                                    <Text className={`${isDarkMode ? "text-white" : "text-black"}`} numberOfLines={1}>{lastMsg}</Text>
                                 </View>
-
-                                {/* Date & point bleu si non lu */}
                                 <View className="items-end">
-                                    <Text className={`${isDarkMode ? "text-white" : "text-gray-500"} text-sm`}>{item.date}</Text>
-                                    {item.unread && <View className="w-3 h-3 bg-blue-600 rounded-full mt-1" />}
+                                    {lastDate ? <Text className={`${isDarkMode ? "text-white" : "text-gray-500"} text-sm`}>{dayjs(lastDate).format("D MMM")}</Text> : null}
                                 </View>
                             </TouchableOpacity>
-                        )}
-                    />
-                </>
+                        );
+                    }}
+                    ListEmptyComponent={
+                        <View className="items-center justify-center py-10">
+                            <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucune demande</Text>
+                        </View>
+                    }
+                />
             )}
         </View>
     );

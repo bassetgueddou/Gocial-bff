@@ -15,13 +15,13 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "../ThemeContext";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import { useCreateActivity } from "../../src/contexts/CreateActivityContext";
 
-// Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
     CAVisioInformation: undefined;
+    CARealInformation: undefined;
 };
 
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { width, height } = Dimensions.get("window");
@@ -126,6 +126,10 @@ const CreateActivity: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<string | null>(null);
 
     const navigation = useNavigation<NavigationProp>();
+    const { updateForm, resetForm } = useCreateActivity();
+
+    // Reset form when starting a new activity creation
+    React.useEffect(() => { resetForm(); }, [resetForm]);
 
     // Filtrer les activités selon la catégorie sélectionnée
     const filteredActivities = activities.filter(activity => activity.category === selectedCategory);
@@ -216,7 +220,17 @@ const CreateActivity: React.FC = () => {
 
             <View className="flex-row justify-end px-4 pb-6">
                 <TouchableOpacity
-                    onPress={() => navigation.navigate("CAVisioInformation")}
+                    onPress={() => {
+                        const isVisio = selectedCategory === 'visio';
+                        const selectedActivity = activities.find(a => a.id === selectedItem);
+                        updateForm({
+                            selectedCategory,
+                            selectedActivityName: selectedActivity?.name,
+                            activity_type: isVisio ? 'visio' : 'real',
+                            category: selectedCategory,
+                        });
+                        navigation.navigate(isVisio ? 'CAVisioInformation' : 'CARealInformation');
+                    }}
                     className={`${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} px-6 py-3 rounded-2xl items-center`}
                 >
                     <Text className="text-white font-semibold">Continuer 1/5</Text>

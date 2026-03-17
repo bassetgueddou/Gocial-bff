@@ -6,22 +6,23 @@ import React, { useState } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
 
-// Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
     CAVisioRestriction: undefined;
     Main: undefined;
 };
 
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 
 const CAVisioInformation: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
+    const { updateForm } = useCreateActivity();
 
     const [selectedOption, setSelectedOption] = useState<"partout" | "ville">("partout");
+    const [city, setCity] = useState("");
 
     const [showPicker, setShowPicker] = useState(false);
     const [date, setDate] = useState<Date | null>(null);
@@ -104,6 +105,8 @@ const CAVisioInformation: React.FC = () => {
                             placeholder="Rechercher une ville"
                             placeholderTextColor={isDarkMode ? "#9EA1AB" : "black"}
                             className={`${isDarkMode ? "bg-[#1D1E20] text-white border-white" : "bg-white text-black border-[#065C98]"} border rounded-md px-4 py-3`}
+                            value={city}
+                            onChangeText={setCity}
                         />
                     </View>
                 )}
@@ -168,7 +171,14 @@ const CAVisioInformation: React.FC = () => {
             </ScrollView>
 
             <View className="absolute bottom-[2rem] right-4">
-                <TouchableOpacity onPress={() => navigation.navigate("CAVisioRestriction")}
+                <TouchableOpacity onPress={() => {
+                    updateForm({
+                        date: date?.toISOString(),
+                        visio_link: link || undefined,
+                        city: selectedOption === 'ville' ? city : undefined,
+                    });
+                    navigation.navigate("CAVisioRestriction");
+                }}
                     className={`${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} px-6 py-3 rounded-2xl`}>
                     <Text className="text-white font-semibold">Continuer 2/5</Text>
                 </TouchableOpacity>

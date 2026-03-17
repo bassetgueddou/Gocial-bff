@@ -97,6 +97,18 @@ class User(db.Model):
     tiktok = db.Column(db.String(100))
     snapchat = db.Column(db.String(100))
     
+    # === Learn more / profile details ===
+    languages = db.Column(db.String(200))
+    profession = db.Column(db.String(100))
+    passions = db.Column(db.String(200))
+    studies = db.Column(db.String(50))
+    school = db.Column(db.String(100))
+    alcohol = db.Column(db.String(50))
+    tobacco = db.Column(db.String(50))
+    food_preference = db.Column(db.String(50))
+    allergies = db.Column(db.String(200))
+    children = db.Column(db.String(50))
+    
     # === Account status ===
     is_verified = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)  # soft delete flag
@@ -235,13 +247,11 @@ class User(db.Model):
                 'website': self.website,
             })
         
-        # Social links - public for everyone
-        data['socials'] = {
-            'instagram': self.instagram,
-            'facebook': self.facebook,
-            'tiktok': self.tiktok,
-            'snapchat': self.snapchat,
-        }
+        # Social links - public for everyone (flat)
+        data['instagram'] = self.instagram
+        data['facebook'] = self.facebook
+        data['tiktok'] = self.tiktok
+        data['snapchat'] = self.snapchat
         
         # Private fields - only visible to the user themselves
         if include_private:
@@ -253,23 +263,36 @@ class User(db.Model):
                 'last_name': self.last_name,
                 'address': self.address,
                 'postal_code': self.postal_code,
+                'siret': self.siret,
+                'cover_url': self.cover_url,
+                'is_active': self.is_active,
+                'premium_type': self.premium_type,
+                'last_seen': self.last_seen.isoformat() if self.last_seen else None,
+                'languages': self.languages,
+                'profession': self.profession,
+                'passions': self.passions,
+                'studies': self.studies,
+                'school': self.school,
+                'alcohol': self.alcohol,
+                'tobacco': self.tobacco,
+                'food_preference': self.food_preference,
+                'allergies': self.allergies,
+                'children': self.children,
             })
         
-        # Settings - for profile edit screens
+        # Settings - for profile edit screens (flat)
         if include_settings:
-            data['settings'] = {
+            data.update({
                 'is_ghost_mode': self.is_ghost_mode,
                 'girls_only_mode': self.girls_only_mode,
                 'dark_mode': self.dark_mode,
                 'language': self.language,
-                'notifications': {
-                    'new_activity': self.notif_new_activity,
-                    'friend_request': self.notif_friend_request,
-                    'messages': self.notif_messages,
-                    'participation': self.notif_participation,
-                    'push_enabled': self.notif_push_enabled,
-                }
-            }
+                'notif_new_activity': self.notif_new_activity,
+                'notif_friend_request': self.notif_friend_request,
+                'notif_messages': self.notif_messages,
+                'notif_participation': self.notif_participation,
+                'notif_push_enabled': self.notif_push_enabled,
+            })
         
         return data
     

@@ -5,19 +5,20 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import { useCreateActivity } from "../../src/contexts/CreateActivityContext";
 
-// Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
     CAVisioPreview: undefined;
+    CARealPreview: undefined;
     Main: undefined;
 };
 
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-const CANumberParticipants: React.FC = () => {
+const CATitle: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
+    const { updateForm, formData } = useCreateActivity();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -114,7 +115,11 @@ const CANumberParticipants: React.FC = () => {
                                                      px-4 py-4 flex-row justify-end items-center`}
                 style={{ height: 80 }} >
 
-                <TouchableOpacity onPress={() => navigation.navigate("CAVisioPreview")} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
+                <TouchableOpacity onPress={() => {
+                    updateForm({ title, description: description || undefined });
+                    const isVisio = formData.activity_type === 'visio';
+                    navigation.navigate(isVisio ? 'CAVisioPreview' : 'CARealPreview');
+                }} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
                     <Text className="text-white font-bold">Aperçu</Text>
                 </TouchableOpacity>
             </View>
@@ -123,4 +128,4 @@ const CANumberParticipants: React.FC = () => {
     );
 }
 
-export default CANumberParticipants;
+export default CATitle;

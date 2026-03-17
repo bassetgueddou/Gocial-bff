@@ -4,7 +4,8 @@ import type { Friendship } from '../types';
 
 export const useFriends = () => {
   const [friends, setFriends] = useState<Friendship[]>([]);
-  const [requests, setRequests] = useState<Friendship[]>([]);
+  const [receivedRequests, setReceivedRequests] = useState<Friendship[]>([]);
+  const [sentRequests, setSentRequests] = useState<Friendship[]>([]);
   const [blocked, setBlocked] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +27,13 @@ export const useFriends = () => {
   const fetchRequests = useCallback(async () => {
     try {
       const data = await friendService.getRequests();
-      const list = Array.isArray(data) ? data : data.received || [];
-      setRequests(list as any);
+      if (Array.isArray(data)) {
+        setReceivedRequests(data as any);
+        setSentRequests([]);
+      } else {
+        setReceivedRequests((data.received || []) as any);
+        setSentRequests((data.sent || []) as any);
+      }
     } catch {
       // Silent
     }
@@ -52,7 +58,7 @@ export const useFriends = () => {
   const acceptRequest = useCallback(async (friendshipId: number) => {
     try {
       await friendService.acceptRequest(friendshipId);
-      setRequests((prev) => prev.filter((r) => r.id !== friendshipId));
+      setReceivedRequests((prev) => prev.filter((r) => r.id !== friendshipId));
       fetchFriends(); // Refresh friends list
     } catch {
       // Silent
@@ -62,7 +68,8 @@ export const useFriends = () => {
   const rejectRequest = useCallback(async (friendshipId: number) => {
     try {
       await friendService.rejectRequest(friendshipId);
-      setRequests((prev) => prev.filter((r) => r.id !== friendshipId));
+      setReceivedRequests((prev) => prev.filter((r) => r.id !== friendshipId));
+      setSentRequests((prev) => prev.filter((r) => r.id !== friendshipId));
     } catch {
       // Silent
     }
@@ -105,15 +112,31 @@ export const useFriends = () => {
     }
   }, [fetchRequests]);
 
+  const cancelRequest = useCallback(async (friendshipId: number) => {
+    try {
+      await friendService.cancelRequest(friendshipId);
+      setSentRequests((prev) => prev.filter((r) => (r.friendship_id || r.id) !== friendshipId));
+    } catch {
+      // Silent
+    }
+  }, []);
+
+  const refreshAll = useCallback(() => {
+    fetchFriends();
+    fetchRequests();
+    fetchBlocked();
+  }, [fetchFriends, fetchRequests, fetchBlocked]);
+
   return {
     friends,
-    requests,
+    requests: { received: receivedRequests, sent: sentRequests },
     blocked,
     loading,
     error,
-    refresh: fetchFriends,
+    refresh: refreshAll,
     acceptRequest,
     rejectRequest,
+    cancelRequest,
     removeFriend,
     blockUser,
     unblockUser,

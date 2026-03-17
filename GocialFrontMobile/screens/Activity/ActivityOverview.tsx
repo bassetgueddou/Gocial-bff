@@ -1,328 +1,288 @@
-import { View, Text, TouchableOpacity, ScrollView, Linking, Image, Pressable } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import MapView, { Marker, Region } from "react-native-maps";
 import ShareModal from "../Home/ShareModal";
 import MoreActivityModal from "./MoreActivityModal";
 import Toast from 'react-native-toast-message';
+import { activityService } from "../../src/services/activities";
+import { API_URL } from "../../src/config";
+import type { Activity } from "../../src/types";
 
-// Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
-    CATitle: undefined;
-    ProfilPersonPreview: undefined;
-    ParticipationTopTabs: undefined;
+    ActivityOverview: { activityId: number };
+    ProfilPersonOverview: { userId: number };
+    ParticipationTopTabs: { activityId: number };
 };
 
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
+type ActivityRouteProp = RouteProp<RootStackParamList, 'ActivityOverview'>;
 
-interface Host {
-    avatar: any; // Utilisation de `any` pour `require()` des images locales
-}
-
-interface Visio {
-    url: string;
-}
-
-interface EventData {
-    id: number;
-    host: Host;
-    title: string;
-    date: string;
-    eventImage: any;
-}
-
-const eventData: EventData = {
-    id: 1,
-    host: {
-        avatar: require("../../img/little-profil-photo.png"), // Image locale
-    },
-    title: "Conversation Anglais en ligne",
-    date: "Dim. 12 oct. - 08:45",
-    eventImage: require("../../img/billard-exemple.jpg"),
+const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+    const hh = d.getHours().toString().padStart(2, '0');
+    const mm = d.getMinutes().toString().padStart(2, '0');
+    return `${days[d.getDay()]}. ${d.getDate()} ${months[d.getMonth()]}. - ${hh}:${mm}`;
 };
 
-interface InfoItem {
-    label: string;
-    value: string;
-}
-
-const infoData: InfoItem[] = [
-    { label: "Type d’activité", value: "Accrobranche" },
-    { label: "Age des participants", value: "18-122" },
-    { label: "Types de participants ", value: "Tout le monde" },
-    { label: "Visibilité", value: "Publique" },
-    { label: "Validation des participants", value: "Manuelle" },
-    { label: "Participants non Gocial ", value: "Refusés" },
-];
-
-interface Coordinates {
-    latitude: number;
-    longitude: number;
-}
+const getInitials = (first?: string | null, last?: string | null) => {
+    const f = (first || '?')[0].toUpperCase();
+    const l = (last || '?')[0].toUpperCase();
+    return `${f}${l}`;
+};
 
 const ActivityOverview: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
+    const route = useRoute<ActivityRouteProp>();
+    const activityId = route.params?.activityId;
 
+    const [activity, setActivity] = useState<Activity | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [modalShareVisible, setModalShareVisible] = useState(false);
     const [moreActivityModalVisible, setMoreActivityModalVisible] = useState(false);
+    const [liked, setLiked] = useState(false);
+    const [likesCount, setLikesCount] = useState(0);
+    const [participationStatus, setParticipationStatus] = useState<string | null>(null);
+    const [participationLoading, setParticipationLoading] = useState(false);
 
-    const [isParticipating, setIsParticipating] = useState(false);
+    const fetchActivity = useCallback(async () => {
+        if (!activityId) return;
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await activityService.getActivity(activityId);
+            const act: Activity = (data as any).activity || (data as any);
+            setActivity(act);
+            setLiked(act.is_liked || false);
+            setLikesCount(act.likes_count || 0);
+            setParticipationStatus(act.my_participation?.status || null);
+        } catch (err: any) {
+            setError(err?.response?.data?.error || "Impossible de charger l'activité.");
+        } finally {
+            setLoading(false);
+        }
+    }, [activityId]);
 
-    const locationAddress: Coordinates = {
-        latitude: 48.872,
-        longitude: 2.343, // Coordonnées approximatives de 34 rue Richer, Paris
+    useEffect(() => { fetchActivity(); }, [fetchActivity]);
+
+    const handleLike = async () => {
+        if (!activity || !activityId) return;
+        const wasLiked = liked;
+        setLiked(!wasLiked);
+        setLikesCount(wasLiked ? likesCount - 1 : likesCount + 1);
+        try {
+            if (wasLiked) { await activityService.unlikeActivity(activityId); }
+            else { await activityService.likeActivity(activityId); }
+        } catch {
+            setLiked(wasLiked);
+            setLikesCount(wasLiked ? likesCount : likesCount - 1);
+        }
     };
 
-    const locationAppointment: Coordinates = {
-        latitude: 48.762,
-        longitude: 2.140, // Coordonnées approximatives de 8 Rue Léon Schwartzenberg, Paris
+    const handleParticipation = async () => {
+        if (!activity || participationLoading || !activityId) return;
+        setParticipationLoading(true);
+        try {
+            if (participationStatus === 'validated' || participationStatus === 'pending') {
+                await activityService.cancelParticipation(activityId);
+                setParticipationStatus(null);
+                Toast.show({ type: 'error', text1: 'Participation annulée', text2: 'Tu ne participes plus à cet évènement.', position: 'top', topOffset: 60 });
+            } else {
+                const result = await activityService.requestParticipation(activityId);
+                setParticipationStatus(result.status);
+                Toast.show({
+                    type: 'success',
+                    text1: result.status === 'pending' ? 'Demande envoyée' : 'Participation confirmée',
+                    text2: result.status === 'pending' ? "Tu es maintenant en liste d'attente." : 'Tu participes maintenant à cet évènement.',
+                    position: 'top', topOffset: 60,
+                });
+            }
+            fetchActivity();
+        } catch (err: any) {
+            Toast.show({ type: 'error', text1: 'Erreur', text2: err?.response?.data?.error || 'Une erreur est survenue.', position: 'top', topOffset: 60 });
+        } finally {
+            setParticipationLoading(false);
+        }
     };
 
-    // Centrage dynamique
-    const midLat = (locationAddress.latitude + locationAppointment.latitude) / 2;
-    const midLng = (locationAddress.longitude + locationAppointment.longitude) / 2;
-
-    const initialRegion: Region = {
-        latitude: midLat,
-        longitude: midLng,
-        latitudeDelta: Math.abs(locationAddress.latitude - locationAppointment.latitude) * 4 || 0.05,
-        longitudeDelta: Math.abs(locationAddress.longitude - locationAppointment.longitude) * 4 || 0.05,
-    };
-
-    interface InfoItem {
-        label: string;
-        value: string;
+    if (loading) {
+        return (
+            <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1 justify-center items-center`}>
+                <ActivityIndicator size="large" color="#065C98" />
+                <Text className={`${isDarkMode ? "text-white" : "text-black"} mt-4`}>Chargement...</Text>
+            </View>
+        );
     }
 
-    const [liked, setLiked] = useState<boolean>(false);
-    const [likesCount, setLikesCount] = useState<number>(0);
+    if (error || !activity) {
+        return (
+            <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1 justify-center items-center px-6`}>
+                <MaterialIcons name="cloud-off" size={48} color={isDarkMode ? "white" : "gray"} />
+                <Text className={`${isDarkMode ? "text-white" : "text-black"} mt-4 text-center`}>{error || "Activité introuvable"}</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} className="mt-4 bg-[#065C98] px-6 py-3 rounded-full">
+                    <Text className="text-white font-medium">Retour</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
-    const handleLike = () => {
-        setLiked(!liked);
-        setLikesCount(liked ? likesCount - 1 : likesCount + 1);
-    };
+    const imageSource = activity.image_url ? { uri: `${API_URL}${activity.image_url}` } : require("../../img/billard-exemple.jpg");
+    const hostInitials = activity.host ? getInitials(activity.host.first_name, activity.host.last_name) : '??';
+    const hasCoords = activity.latitude && activity.longitude;
+    const initialRegion: Region | undefined = hasCoords ? { latitude: activity.latitude!, longitude: activity.longitude!, latitudeDelta: 0.01, longitudeDelta: 0.01 } : undefined;
+
+    const infoData = [
+        { label: "Type d'activité", value: activity.category || activity.activity_type },
+        { label: "Âge", value: `${activity.min_age || 18}-${activity.max_age || 99}` },
+        { label: "Participants", value: activity.gender_restriction === 'girls_only' ? 'Filles uniquement' : 'Tout le monde' },
+        { label: "Visibilité", value: activity.visibility === 'public' ? 'Publique' : activity.visibility === 'friends' ? 'Amis' : 'Privée' },
+        { label: "Validation", value: activity.validation_type === 'manual' ? 'Manuelle' : 'Automatique' },
+        { label: "Statut", value: activity.status === 'active' ? 'Active' : activity.status },
+    ];
+
+    const isParticipating = participationStatus === 'validated' || participationStatus === 'pending';
+    const participantsList = activity.participants || [];
 
     return (
         <View className="flex-1">
-            {/* HEADER */}
             <SafeAreaView className={`${isDarkMode ? "bg-black" : "bg-white"}`}>
                 <ShareModal visible={modalShareVisible} onClose={() => setModalShareVisible(false)} />
                 <MoreActivityModal visible={moreActivityModalVisible} onClose={() => setMoreActivityModalVisible(false)} />
-
                 <View className="flex-row items-center justify-between px-4 py-2">
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <MaterialIcons name="arrow-back-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
-
                     <TouchableOpacity onPress={() => setMoreActivityModalVisible(true)}>
                         <MaterialIcons name="more-horiz" size={28} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
 
-            {/* ScrollView contenant tout le contenu */}
             <ScrollView className={`${isDarkMode ? "bg-black" : "bg-white"} min-h-screen`} contentContainerStyle={{ paddingBottom: 300 }}>
-
-                {/* Image principale */}
+                {/* Main image + host avatar */}
                 <View className="relative">
-                    <Image
-                        source={eventData.eventImage}
-                        className="w-full h-48"
-                    />
-
-                    {/* Image de profil superposée */}
-                    <TouchableOpacity onPress={() => navigation.navigate("ProfilPersonPreview")} className="absolute -bottom-6 left-4 rounded-full">
-                        <Image
-                            source={eventData.host.avatar}
-                            className="w-[4rem] h-[4rem] rounded-full"
-                        />
-                    </TouchableOpacity>
+                    <Image source={imageSource} className="w-full h-48" />
+                    {activity.host && (
+                        <TouchableOpacity
+                            onPress={() => activity.host?.id && (navigation as any).navigate("ProfilPersonOverview", { userId: activity.host.id })}
+                            className="absolute -bottom-6 left-4 rounded-full bg-blue-500 w-16 h-16 items-center justify-center"
+                        >
+                            {activity.host.avatar_url ? (
+                                <Image source={{ uri: `${API_URL}${activity.host.avatar_url}` }} className="w-16 h-16 rounded-full" />
+                            ) : (
+                                <Text className="text-white font-bold text-lg">{hostInitials}</Text>
+                            )}
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                {/* Contenu texte */}
-                <View className="mt-2 items-center">
-                    <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold text-lg text-center`}>
-                        {eventData.title}
-                    </Text>
-                    <Text className={`${isDarkMode ? "text-white" : "text-black"} text-base mt-1`}>
-                        {eventData.date}
-                    </Text>
+                {/* Title + Date */}
+                <View className="mt-8 items-center">
+                    <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold text-lg text-center`}>{activity.title}</Text>
+                    <Text className={`${isDarkMode ? "text-white" : "text-black"} text-base mt-1`}>{formatDate(activity.date)}</Text>
                 </View>
 
-                {/* Informations (Ville, Âge, Activités) */}
-                <View className="flex-row items-start justify-center px-[3rem] mt-4">
-                    <TouchableOpacity className={`items-center border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg mr-6`}>
-                        <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>Paris</Text>
-                    </TouchableOpacity>
-
+                {/* City + participants count */}
+                <View className="flex-row items-start justify-center px-12 mt-4">
+                    {activity.city && (
+                        <TouchableOpacity className={`items-center border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg mr-6`}>
+                            <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{activity.city}</Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity className={`items-center border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg`}>
-                        <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>0/5</Text>
+                        <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{activity.current_participants}/{activity.max_participants}</Text>
                     </TouchableOpacity>
-
-                    {/* <TouchableOpacity className={`border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg`}>
-                        <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>Gratuit</Text>
-                    </TouchableOpacity> */}
                 </View>
 
-                <View className="flex-row justify-end gap-x-1">
-                    <Pressable
-                        onPress={handleLike}
-                        className={`w-[10%] flex-row items-center ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F3F3F3]"} rounded-xl p-2`}
-                        style={({ pressed }) => [
-                            { opacity: pressed ? 0.6 : 1 },
-                        ]}
-                    >
-                        <MaterialIcons
-                            name={liked ? "favorite" : "favorite-border"}
-                            size={13}
-                            color={liked ? "red" : isDarkMode ? "white" : "black"}
-                        />
-                        <Text className={`${isDarkMode ? "text-white" : "text-black"}`} style={{ minWidth: 16, textAlign: "center" }}>
-                            {likesCount}
-                        </Text>
+                {/* Like + Share */}
+                <View className="flex-row justify-end gap-x-1 mt-2 pr-2">
+                    <Pressable onPress={handleLike} className={`w-[10%] flex-row items-center ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F3F3F3]"} rounded-xl p-2`} style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
+                        <MaterialIcons name={liked ? "favorite" : "favorite-border"} size={13} color={liked ? "red" : isDarkMode ? "white" : "black"} />
+                        <Text className={`${isDarkMode ? "text-white" : "text-black"}`} style={{ minWidth: 16, textAlign: "center" }}>{likesCount}</Text>
                     </Pressable>
-
-                    <TouchableOpacity onPress={() => setModalShareVisible(true)} className={`w-[12%] items-center ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F3F3F3]"}  rounded-xl p-[0.7rem]`}>
+                    <TouchableOpacity onPress={() => setModalShareVisible(true)} className={`w-[12%] items-center ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F3F3F3]"} rounded-xl p-[0.7rem]`}>
                         <FontAwesome name="share" size={13} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
                 </View>
 
+                {/* Participants */}
                 <View className={`p-4 ${isDarkMode ? "bg-black" : "bg-white"}`}>
-                    {/* Texte haut */}
-                    <Text className={`text-base mb-2 ${isDarkMode ? "text-white" : ""}`}>1/5 Participant  <Text>(0 en attente)</Text></Text>
-
-                    {/* Ligne avatar + bouton */}
+                    <Text className={`text-base mb-2 ${isDarkMode ? "text-white" : ""}`}>
+                        {activity.current_participants}/{activity.max_participants} Participant{activity.current_participants !== 1 ? 's' : ''}
+                        {activity.spots_left !== undefined && <Text> ({activity.spots_left} places restantes)</Text>}
+                    </Text>
                     <View className="flex-row mb-2">
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                        >
-                            {/* Avatar */}
-                            <TouchableOpacity onPress={() => navigation.navigate("ProfilPersonPreview")}>
-                                <Image
-                                    source={require("../../img/little-profil-photo.png")} // Remplace par ton chemin
-                                    className="w-10 h-10 rounded-full"
-                                />
-                            </TouchableOpacity>
-
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {participantsList.map((p, i) => (
+                                <TouchableOpacity key={i} onPress={() => p.user?.id && (navigation as any).navigate("ProfilPersonOverview", { userId: p.user.id })} className="mr-2">
+                                    {p.user?.avatar_url ? (
+                                        <Image source={{ uri: `${API_URL}${p.user.avatar_url}` }} className="w-10 h-10 rounded-full" />
+                                    ) : (
+                                        <View className="w-10 h-10 rounded-full bg-blue-500 items-center justify-center">
+                                            <Text className="text-white text-xs">{getInitials(p.user?.first_name, p.user?.last_name)}</Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
                         </ScrollView>
-
-                        {/* Bouton bleu avec flèche */}
-                        <TouchableOpacity onPress={() => navigation.navigate("ParticipationTopTabs")} className={`ml-2 w-[2.45rem] h-[2.45rem] rounded-full ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} justify-center items-center`}>
+                        <TouchableOpacity onPress={() => activityId && navigation.navigate("ParticipationTopTabs", { activityId })} className={`ml-2 w-10 h-10 rounded-full ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} justify-center items-center`}>
                             <MaterialIcons name="arrow-forward-ios" size={20} color="white" />
                         </TouchableOpacity>
                     </View>
-
-                    {/* Ligne bas */}
-                    <Text className={`text-sm ${isDarkMode ? "text-white" : ""}`}>
-                        + 2 Participants hors Gocial seront avec Alain
-                    </Text>
                 </View>
 
-                <View className={`mt-2 w-full mb-4`}>
-                    <View className="flex-row items-center justify-between px-4 mb-2">
-                        <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>
-                            Description
-                        </Text>
-                    </View>
-
-                    <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"} py-4 px-6 rounded-lg w-full`}>
-                        <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>Discutons de l’actualité du jour en anglais, dans un esprit conviviale. Tout les niveaux sont les bienvenus.</Text>
-                    </View>
-                </View>
-
-                {/* Carte avec Marqueur */}
-                <View className="h-60 w-full mt-2">
-                    <MapView
-                        style={{ flex: 1 }}
-                        initialRegion={initialRegion}
-                    >
-                        <Marker coordinate={locationAddress}>
-                            <View className="items-center">
-                                {/* Bulle d'info */}
-                                <View className="bg-white p-2 rounded-lg shadow-md mb-0">
-                                    <Text className="font-semibold text-xs text-black">
-                                        34 rue Richer, 75009 Paris, France
-                                    </Text>
-                                    <Text className="text-xs text-gray-600">Environ 20km</Text>
-                                </View>
-
-                                {/* Flèche blanche avec l'icône "south" */}
-                                <MaterialIcons name="south" size={28} color="white" className="-mt-1" />
-
-                                {/* Icône de localisation */}
-                                <MaterialIcons name="location-pin" size={30} color="#C3AE79" />
-                            </View>
-                        </Marker>
-
-                        <Marker coordinate={locationAppointment}>
-                            <View className="items-center">
-                                {/* Bulle d'info */}
-                                <View className="bg-white p-2 rounded-lg shadow-md mb-0">
-                                    <Text className="font-semibold text-xs text-black">
-                                        38 Rue Léon Schwartzenberg, 75010 Paris, France
-                                    </Text>
-                                    <Text className="text-xs text-gray-600">Environ 20km</Text>
-                                </View>
-
-                                {/* Flèche blanche avec l'icône "south" */}
-                                <MaterialIcons name="south" size={28} color="white" className="-mt-1" />
-
-                                {/* Icône de localisation */}
-                                <MaterialIcons name="location-pin" size={30} color="#828799" />
-                            </View>
-                        </Marker>
-                    </MapView>
-                </View>
-
-                <View className={`px-4 py-6 ${isDarkMode ? "bg-black" : "bg-white"}`}>
-                    <View className="flex-row justify-between">
-                        {/* Bloc gauche : Adresse du lieu */}
-                        <View className="items-start w-[48%]">
-                            <View className="flex-row items-center mb-3">
-                                <MaterialIcons name="location-pin" size={20} color="#C3AE79" />
-                                <Text className={`ml-2 font-medium ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                                    Adresse du lieu
-                                </Text>
-                            </View>
-                            <TouchableOpacity className="bg-[#C3AE79] rounded-2xl w-[80%] h-14 justify-center items-center">
-                                <Text className="text-white font-semibold text-center leading-tight text-base">
-                                    Itinéraire{"\n"}lieu
-                                </Text>
-                            </TouchableOpacity>
+                {/* Description */}
+                {activity.description && (
+                    <View className="mt-2 w-full mb-4">
+                        <View className="flex-row items-center justify-between px-4 mb-2">
+                            <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>Description</Text>
                         </View>
-
-                        {/* Bloc droit : Point de rendez-vous */}
-                        <View className="items-start w-[48%]">
-                            <View className="flex-row items-center mb-3">
-                                <MaterialIcons name="location-pin" size={20} color="#7C7E91" />
-                                <Text className={`ml-2 font-medium ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                                    Point de rendez-vous
-                                </Text>
-                            </View>
-                            <TouchableOpacity className="bg-[#7C7E91] rounded-2xl w-[80%] h-14 justify-center items-center relative left-[1.5rem]">
-                                <Text className="text-white font-semibold text-center leading-tight text-base">
-                                    Itinéraire{"\n"}rendez-vous
-                                </Text>
-                            </TouchableOpacity>
+                        <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"} py-4 px-6 rounded-lg w-full`}>
+                            <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{activity.description}</Text>
                         </View>
                     </View>
-                </View>
+                )}
 
+                {/* Map */}
+                {hasCoords && initialRegion && (
+                    <View className="h-60 w-full mt-2">
+                        <MapView style={{ flex: 1 }} initialRegion={initialRegion}>
+                            <Marker coordinate={{ latitude: activity.latitude!, longitude: activity.longitude! }}>
+                                <View className="items-center">
+                                    <View className="bg-white p-2 rounded-lg shadow-md mb-0">
+                                        <Text className="font-semibold text-xs text-black">{activity.address || activity.city || 'Lieu'}</Text>
+                                    </View>
+                                    <MaterialIcons name="location-pin" size={30} color="#C3AE79" />
+                                </View>
+                            </Marker>
+                        </MapView>
+                    </View>
+                )}
+
+                {/* Visio link */}
+                {activity.activity_type === 'visio' && activity.visio_url && (
+                    <View className={`px-4 py-4 ${isDarkMode ? "bg-black" : "bg-white"}`}>
+                        <Text className={`font-bold text-lg mb-2 ${isDarkMode ? "text-white" : "text-black"}`}>Lien Visio</Text>
+                        <TouchableOpacity className="bg-[#065C98] rounded-lg px-4 py-3 items-center">
+                            <Text className="text-white font-medium">Rejoindre la visio</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Info details */}
                 <View className="mt-6 w-full">
-                    {/* En-tête */}
                     <View className="flex-row items-center justify-between px-4 mb-2">
                         <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>En savoir plus</Text>
                     </View>
-
-                    {/* Liste des infos */}
                     <View className={`${isDarkMode ? "bg-black" : "bg-white"} rounded-lg`}>
                         {infoData.map((item, index) => (
                             <View key={index} className="mt-2">
@@ -334,42 +294,24 @@ const ActivityOverview: React.FC = () => {
                         ))}
                     </View>
                 </View>
-
             </ScrollView>
 
-            <View className={`absolute bottom-0 left-0 right-0 ${isDarkMode ? 'bg-black' : 'bg-white'} 
-                    px-4 py-4 flex-row justify-between items-center`}
-                style={{ height: 80 }} >
-                <TouchableOpacity className={`px-8 py-3 border ${isDarkMode ? 'border-[#1A6EDE]' : 'border-[#065C98]'} rounded-lg`}>
-                    <Text className={`${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"} font-bold`}>Message</Text>
-                </TouchableOpacity>
-
-{/* Si l'hôte à choisit l'option "liste d'attente", mettre dans text2 : "tu est maintenant en liste d'attente" */}
-                <TouchableOpacity
-                    onPress={() => {
-                        setIsParticipating(!isParticipating);
-                        Toast.show({
-                            type: isParticipating ? 'error' : 'success',
-                            text1: isParticipating
-                                ? 'Participation annulée'
-                                : 'Participation confirmée',
-                            text2: isParticipating
-                                ? 'Tu ne participes plus à cet évènement.'
-                                : 'Tu participes maintenant à cet évènement.',
-                            position: 'top',
-                            topOffset: 60,
-                        });
-                    }}
-                    className={`px-8 py-3 ${isDarkMode ?
-                        isParticipating ? 'bg-[#FF4D4D]' : 'bg-[#1A6EDE]' :
-                        isParticipating ? 'bg-[#FF4D4D]' : 'bg-[#065C98]'} rounded-lg`}>
-                    <Text className="text-white font-bold">
-                        {isParticipating ? "Annulation" : "Participer"}
-                    </Text>
-                </TouchableOpacity>
-
-            </View>
-
+            {/* Bottom bar: Message + Participate */}
+            {!activity.viewer_info?.is_host && (
+                <View className={`absolute bottom-0 left-0 right-0 ${isDarkMode ? 'bg-black' : 'bg-white'} px-4 py-4 flex-row justify-between items-center`} style={{ height: 80 }}>
+                    <TouchableOpacity
+                        onPress={() => activity.host?.id && (navigation as any).navigate("TypeMessageView", { partnerId: activity.host.id, partnerName: activity.host.first_name || activity.host.pseudo || 'Hôte' })}
+                        className={`px-8 py-3 border ${isDarkMode ? 'border-[#1A6EDE]' : 'border-[#065C98]'} rounded-lg`}
+                    >
+                        <Text className={`${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"} font-bold`}>Message</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleParticipation} disabled={participationLoading} className={`px-8 py-3 ${isParticipating ? 'bg-[#FF4D4D]' : isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
+                        <Text className="text-white font-bold">
+                            {participationLoading ? '...' : participationStatus === 'pending' ? 'En attente' : isParticipating ? 'Annuler' : 'Participer'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }

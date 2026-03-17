@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -15,6 +15,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import ShareFriendView from "./ShareFriendView";
+import { useFriends } from "../../src/hooks/useFriends";
 
 const { width, height } = Dimensions.get("window");
 
@@ -49,35 +50,24 @@ const ShareModal: React.FC<ShareModalProps> = ({ visible, onClose }) => {
     const [isFriendView, setIsFriendView] = useState(false);
 
     const [showCopiedToast, setShowCopiedToast] = useState(false);
+    const { friends } = useFriends();
 
     const panGesture = Gesture.Pan()
         .onUpdate((event) => {
             if (event.translationY > 100) {
-                runOnJS(onClose)(); // Utilisation de runOnJS pour éviter l'erreur
+                runOnJS(onClose)();
             }
         });
 
-    interface Contact {
-        id: number;
-        name: string;
-        commonContacts: number;
-        initial?: string;
-    }
-
-    const contacts: Contact[] = [
-        { id: 1, name: "Liliane", commonContacts: 2, initial: "L" },
-        { id: 2, name: "Liliane", commonContacts: 2, initial: "L" },
-        { id: 3, name: "Liliane", commonContacts: 2, initial: "L" },
-        { id: 4, name: "Liliane", commonContacts: 2, initial: "L" },
-        { id: 5, name: "Liliane", commonContacts: 2, initial: "L" },
-    ];
-
-    const users = [
-        { id: '1', name: 'Cécile Eden', initials: 'CE', isActive: true },
-        { id: '2', name: 'Quentin Dupont', initials: 'QD', isActive: false },
-        { id: '3', name: 'Léa Martin', initials: 'LM', isActive: true },
-        { id: '4', name: 'Alexis Dubois', initials: 'AD', isActive: false },
-    ];
+    // Map real friends to the format ShareFriendView expects
+    const users = friends.map((f: any) => {
+        const friend = f.friend || f.user || f;
+        const firstName = friend.first_name || friend.company_name || "";
+        const lastName = friend.last_name || "";
+        const name = friend.company_name || `${firstName} ${lastName}`.trim();
+        const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "?";
+        return { id: String(friend.id), name, initials, isActive: true };
+    });
 
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -189,25 +179,22 @@ const ShareModal: React.FC<ShareModalProps> = ({ visible, onClose }) => {
                                     />
                                 </View>
 
-                                {/* Liste des contacts à inviter */}
+                                {/* Liste des amis Gocial à inviter */}
                                 <View className="mt-4 space-y-3">
-                                    {contacts.map((contact) => (
+                                    {users.map((user) => (
                                         <View
-                                            key={contact.id}
+                                            key={user.id}
                                             className="flex-row items-center justify-between px-1 mt-2"
                                         >
                                             <View className="flex-row items-center">
                                                 <View className={`w-12 h-12 rounded-full ${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-200"} items-center justify-center mr-4`}>
                                                     <Text className={`text-lg font-bold ${isDarkMode ? "text-white" : "text-black"}`}>
-                                                        {contact.initial || contact.name.charAt(0)}
+                                                        {user.initials}
                                                     </Text>
                                                 </View>
                                                 <View>
                                                     <Text className={`text-base font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>
-                                                        {contact.name}
-                                                    </Text>
-                                                    <Text className={`text-sm ${isDarkMode ? "text-white" : "text-black"}`}>
-                                                        {contact.commonContacts} contact{contact.commonContacts > 1 ? "s" : ""} sur Gosial
+                                                        {user.name}
                                                     </Text>
                                                 </View>
                                             </View>

@@ -1,209 +1,131 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList } from 'react-native';
+﻿import React, { useState } from "react";
+import { View, Text, Image, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { useTheme } from "../../screens/ThemeContext";
-import { BlurView } from '@react-native-community/blur';
-import GhostModeModal from './GhostModeModal';
-import FriendRequestModal from './FriendRequestModal';
+import { BlurView } from "@react-native-community/blur";
+import GhostModeModal from "./GhostModeModal";
+import FriendRequestModal from "./FriendRequestModal";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
+import { useNotifications } from "../../src/hooks/useNotifications";
+import { useFriends } from "../../src/hooks/useFriends";
+import dayjs from "dayjs";
+import "dayjs/locale/fr";
 
-// Définition des noms d'écrans dans le Stack.Navigator
+dayjs.locale("fr");
+
 type RootStackParamList = {
-    ProfilProAdd: undefined;
-    ProfilAssoAdd: undefined;
-    ProfilPersonOverview: undefined;
+    ProfilProAdd: { userId: number };
+    ProfilAssoAdd: { userId: number };
+    ProfilPersonOverview: { userId: number };
 };
-
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
-
-type User = {
-    id: string;
-    name: string;
-    age: number;
-    city: string;
-    image: any; // ou ImageSourcePropType si tu veux être plus strict
-};
-
-type ProAsso = {
-    id: string;
-    name: string;
-    city: string;
-    hobby: string;
-    image: any; // ou ImageSourcePropType si tu veux être plus strict
-    type: "Pro" | "Asso";
-}
-
-
-const user: User[] = [
-    {
-        id: '1',
-        name: 'Sophie L.',
-        age: 24,
-        city: 'Paris 18',
-        image: require('../../img/little-profil-photo.png'),
-    },
-    {
-        id: '2',
-        name: 'Emma R.',
-        age: 26,
-        city: 'Paris 18',
-        image: require('../../img/little-profil-photo.png'),
-    },
-];
-
-const proAsso: ProAsso[] = [
-    {
-        id: '3',
-        name: 'Le Froggy Bar',
-        city: 'Lyon',
-        hobby: 'Peinture 🖌️',
-        image: require('../../img/little-profil-photo.png'),
-        type: 'Pro'
-    },
-    {
-        id: '4',
-        name: 'Le Froggy Bar',
-        city: 'Lyon',
-        hobby: 'Peinture 🖌️',
-        image: require('../../img/little-profil-photo.png'),
-        type: 'Asso'
-    },
-];
-
-type CombinedItem =
-    | (User & { itemType: 'user' })
-    | (ProAsso & { itemType: 'proAsso' });
-
 
 const ProfileView: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
-
+    const { notifications, loading } = useNotifications();
+    const { sendRequest } = useFriends();
     const [ghostModeModalVisible, setGhostModeModalVisible] = useState(false);
     const [friendRequestModalVisible, setFriendRequestModeModalVisible] = useState(false);
     const [selectedUserName, setSelectedUserName] = useState("");
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
-    // Fusion des données
-    const combinedData: CombinedItem[] = [
-        ...user.map(user => ({ ...user, itemType: 'user' as const })),
-        ...proAsso.map(proAsso => ({ ...proAsso, itemType: 'proAsso' as const })),
-    ];
+    const profileViewNotifs = notifications.filter(
+        (n) => n.type?.includes("profile_view") || n.type?.includes("view")
+    );
 
+    const getInitials = (name?: string): string => {
+        if (!name) return "?";
+        const parts = name.split(" ");
+        return parts.map((p) => p[0] || "").join("").toUpperCase().slice(0, 2);
+    };
+
+    const handleSendFriendRequest = async () => {
+        if (selectedUserId) {
+            try {
+                await sendRequest(selectedUserId);
+                Toast.show({ type: "success", text1: `Demande envoyee a ${selectedUserName}`, text2: "Votre demande d'ami a ete envoyee avec succes.", visibilityTime: 2500, position: "top", topOffset: 60 });
+            } catch {
+                Toast.show({ type: "error", text1: "Erreur", text2: "Impossible d'envoyer la demande.", position: "top", topOffset: 60 });
+            }
+        }
+        setFriendRequestModeModalVisible(false);
+    };
+
+    if (loading) {
+        return (
+            <View className={`flex-1 items-center justify-center ${isDarkMode ? "bg-black" : "bg-white"}`}>
+                <ActivityIndicator size="large" color="#065C98" />
+            </View>
+        );
+    }
 
     return (
         <View className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}>
-
             <GhostModeModal visible={ghostModeModalVisible} onClose={() => setGhostModeModalVisible(false)} />
-
             <FriendRequestModal
                 name={selectedUserName}
                 visible={friendRequestModalVisible}
                 onClose={() => setFriendRequestModeModalVisible(false)}
-                onConfirm={() => {
-                    Toast.show({
-                        type: "success",
-                        text1: `Demande envoyée ${ "à " + selectedUserName || ""} ✅`,
-                        text2: `Votre demande d’ami a été envoyée avec succès.`,
-                        visibilityTime: 2500,
-                        position: 'top',
-                        topOffset: 60,
-                    });
-                    setFriendRequestModeModalVisible(false);
-                }}
+                onConfirm={handleSendFriendRequest}
             />
-
-            <TouchableOpacity onPress={() => setGhostModeModalVisible(true)}
-                className='flex-row justify-end px-4 mt-2'
-            >
-                <Image source={require("../../img/ghost.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className='h-10 w-10' />
+            <TouchableOpacity onPress={() => setGhostModeModalVisible(true)} className="flex-row justify-end px-4 mt-2">
+                <Image source={require("../../img/ghost.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-10 w-10" />
             </TouchableOpacity>
 
-            <FlatList
-                data={combinedData}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => {
-                        if (item.itemType === 'user') {
-                            navigation.navigate("ProfilPersonOverview");
-                        } else if (item.type === 'Pro') {
-                            navigation.navigate("ProfilProAdd");
-                        } else {
-                            navigation.navigate("ProfilAssoAdd");
-                        }
-                    }} className="flex-row items-center justify-between px-4 py-3">
-                        {/* Left: Avatar + Infos */}
-                        <View className="flex-row items-center space-x-3">
-                            <BlurView
-                                blurType="light"
-                                blurAmount={15}
-                                reducedTransparencyFallbackColor="white"
-                                style={{
-                                    borderRadius: 20, // très léger pour éviter un effet trop carré
-                                    alignSelf: 'flex-start',
-                                }}
+            {profileViewNotifs.length === 0 ? (
+                <View className="flex-1 items-center justify-center">
+                    <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"} text-lg`}>Aucune vue de profil</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={profileViewNotifs}
+                    keyExtractor={(item) => String(item.id)}
+                    renderItem={({ item }) => {
+                        const actor = item.actor;
+                        const name = actor?.pseudo || "Utilisateur";
+                        const initials = getInitials(name);
+                        return (
+                            <TouchableOpacity
+                                onPress={() => actor?.id && navigation.navigate("ProfilPersonOverview", { userId: actor.id })}
+                                className="flex-row items-center justify-between px-4 py-3"
                             >
-                                <Image
-                                    source={item.image}
-                                    className="w-12 h-12 rounded-full"
-                                    resizeMode="cover"
-                                />
-                            </BlurView>
-
-
-                            <View className='ml-2'>
-                                <BlurView
-                                    blurType="light"
-                                    blurAmount={15}
-                                    reducedTransparencyFallbackColor="white"
-                                    style={{
-                                        borderRadius: 8, // très léger pour éviter un effet trop carré
-                                        alignSelf: 'flex-start',
-                                    }}
-                                >
-                                    {item.itemType === 'user' ? (
-                                        <>
-                                            <Text className={`${isDarkMode ? "text-white" : "text-black"} font-medium`}>
-                                                {item.name}  {item.age} ans
-                                            </Text>
-
-                                        </>
+                                <View className="flex-row items-center space-x-3">
+                                    {actor?.avatar_url ? (
+                                        <BlurView blurType="light" blurAmount={15} reducedTransparencyFallbackColor="white" style={{ borderRadius: 20, alignSelf: "flex-start" }}>
+                                            <Image source={{ uri: actor.avatar_url }} className="w-12 h-12 rounded-full" resizeMode="cover" />
+                                        </BlurView>
                                     ) : (
-                                        <>
-                                            <View className="flex-row">
-                                                <Text className={`${isDarkMode ? "text-white" : "text-black"} font-medium`}>
-                                                    {item.name}
-                                                </Text>
-                                                <Text className={`font-medium ml-1 ${item.type === 'Pro' ? 'text-[#8260D2]' : 'text-[#008F29]'}`}>
-                                                    {item.type}
-                                                </Text>
+                                        <BlurView blurType="light" blurAmount={15} reducedTransparencyFallbackColor="white" style={{ borderRadius: 20, alignSelf: "flex-start" }}>
+                                            <View className="w-12 h-12 rounded-full bg-[#9BD3E8] items-center justify-center">
+                                                <Text className="text-black font-bold">{initials}</Text>
                                             </View>
-                                        </>
+                                        </BlurView>
                                     )}
-
-                                </BlurView>
-                                <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold`}>{item.city}</Text>
-                            </View>
-                        </View>
-
-                        {/* Right: Bouton */}
-                        <TouchableOpacity onPress={() => {
-                            setSelectedUserName(item.name);
-                            setFriendRequestModeModalVisible(true);
-                        }}
-                            className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-200"} px-3 py-2 rounded-full`}
-                        >
-                            <Text className={`${isDarkMode ? "text-white" : "text-black"} text-sm font-medium`}>Demander en ami</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                )}
-
-                // Séparer d'un trait gris chaque user
-                ItemSeparatorComponent={() => (
-                    <View style={{ height: 1, backgroundColor: '#D1D5DB', marginHorizontal: 16 }} />
-                )}
-            />
+                                    <View className="ml-2">
+                                        <BlurView blurType="light" blurAmount={15} reducedTransparencyFallbackColor="white" style={{ borderRadius: 8, alignSelf: "flex-start" }}>
+                                            <Text className={`${isDarkMode ? "text-white" : "text-black"} font-medium`}>{name}</Text>
+                                        </BlurView>
+                                        <Text className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{dayjs(item.created_at).format("D MMM - HH:mm")}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setSelectedUserName(name);
+                                        setSelectedUserId(actor?.id || null);
+                                        setFriendRequestModeModalVisible(true);
+                                    }}
+                                    className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-200"} px-3 py-2 rounded-full`}
+                                >
+                                    <Text className={`${isDarkMode ? "text-white" : "text-black"} text-sm font-medium`}>Demander en ami</Text>
+                                </TouchableOpacity>
+                            </TouchableOpacity>
+                        );
+                    }}
+                    ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: "#D1D5DB", marginHorizontal: 16 }} />}
+                />
+            )}
         </View>
     );
 };

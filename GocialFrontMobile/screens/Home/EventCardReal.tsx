@@ -7,13 +7,11 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import ShareModal from "./ShareModal";
 
-// Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
-    ActivityOverview: undefined;
-    ProfilPersonOverview: undefined;
+    ActivityOverview: { activityId: number };
+    ProfilPersonOverview: { userId: number };
 };
 
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 interface EventCardProps {
@@ -26,6 +24,10 @@ interface EventCardProps {
     currentParticipants: number;
     totalParticipants: number;
     userInitials: string;
+    isLiked?: boolean;
+    likesCount?: number;
+    onToggleLike?: (id: number) => void;
+    hostId?: number;
 }
 
 const EventCardReal: React.FC<EventCardProps> = ({
@@ -38,21 +40,22 @@ const EventCardReal: React.FC<EventCardProps> = ({
     currentParticipants,
     totalParticipants,
     userInitials,
+    isLiked = false,
+    likesCount: propLikesCount = 0,
+    onToggleLike,
+    hostId,
 }) => {
-    const [liked, setLiked] = useState<boolean>(false);
-    const [likesCount, setLikesCount] = useState<number>(0);
     const [modalShareVisible, setModalShareVisible] = useState(false);
     const { isDarkMode } = useTheme();
 
     const handleLike = () => {
-        setLiked(!liked);
-        setLikesCount(liked ? likesCount - 1 : likesCount + 1);
+        onToggleLike?.(id);
     };
 
     const navigation = useNavigation<NavigationProp>();
 
     return (
-        <TouchableOpacity onPress={() => navigation.navigate("ActivityOverview")} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-white"} shadow-md pl-1 pr-2 py-4 pt-4 w-full mt-2`}
+        <TouchableOpacity onPress={() => navigation.navigate("ActivityOverview", { activityId: id })} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-white"} shadow-md pl-1 pr-2 py-4 pt-4 w-full mt-2`}
             style={{
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.9,
@@ -63,7 +66,7 @@ const EventCardReal: React.FC<EventCardProps> = ({
 
             <View className={`flex-row items-start`}>
                 {/* Event Image */}
-                <Image className={`h-[90px] w-[120px] rounded-lg`} source={require("../../img/billard-exemple.jpg")} />
+                <Image className={`h-[90px] w-[120px] rounded-lg`} source={typeof image === 'string' ? { uri: image } : image} />
 
                 {/* Event Details */}
                 <View className={`ml-4 flex-1`}>
@@ -73,7 +76,7 @@ const EventCardReal: React.FC<EventCardProps> = ({
                 </View>
 
                 {/* User Badge */}
-                <TouchableOpacity onPress={() => navigation.navigate("ProfilPersonOverview")} className={`bg-blue-500 rounded-full h-8 w-8 flex items-center justify-center`}>
+                <TouchableOpacity onPress={() => hostId && navigation.navigate("ProfilPersonOverview", { userId: hostId })} className={`bg-blue-500 rounded-full h-8 w-8 flex items-center justify-center`}>
                     <Text className={`text-white font-semibold`}>{userInitials}</Text>
                 </TouchableOpacity>
             </View>
@@ -93,12 +96,12 @@ const EventCardReal: React.FC<EventCardProps> = ({
                     ]}
                 >
                     <MaterialIcons
-                        name={liked ? "favorite" : "favorite-border"}
+                        name={isLiked ? "favorite" : "favorite-border"}
                         size={11}
-                        color={liked ? "red" : isDarkMode ? "white" : "black"}
+                        color={isLiked ? "red" : isDarkMode ? "white" : "black"}
                     />
                     <Text className={`text-xs ${isDarkMode ? "text-white" : "text-black"}`} style={{ minWidth: 16, textAlign: "center" }}>
-                        {likesCount}
+                        {propLikesCount}
                     </Text>
                 </Pressable>
 

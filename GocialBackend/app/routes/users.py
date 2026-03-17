@@ -95,10 +95,12 @@ def update_profile():
     
     # Fields that can be updated
     allowed_fields = [
-        'first_name', 'last_name', 'pseudo', 'phone', 'gender',
+        'email', 'first_name', 'last_name', 'pseudo', 'phone', 'gender',
         'city', 'address', 'postal_code', 'bio',
         'company_name', 'description', 'website',
         'instagram', 'facebook', 'tiktok', 'snapchat',
+        'languages', 'profession', 'passions', 'studies', 'school',
+        'alcohol', 'tobacco', 'food_preference', 'allergies', 'children',
     ]
     
     # Settings fields
@@ -138,6 +140,18 @@ def update_profile():
     # Handle FCM token for push notifications
     if 'fcm_token' in data:
         user.fcm_token = data['fcm_token']
+    
+    # Handle birth_date update (needs date parsing)
+    if 'birth_date' in data:
+        from datetime import datetime
+        bd = data['birth_date']
+        if bd:
+            try:
+                user.birth_date = datetime.strptime(bd, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Invalid birth_date format. Use YYYY-MM-DD'}), 400
+        else:
+            user.birth_date = None
     
     try:
         db.session.commit()

@@ -7,6 +7,9 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import moment from "moment";
 import ShareModal from "../Home/ShareModal";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { userService } from "../../src/services/users";
+import Toast from "react-native-toast-message";
 
 const EventCard: React.FC = () => {
     const [modalShareVisible, setModalShareVisible] = useState(false);
@@ -173,12 +176,38 @@ const EventCard: React.FC = () => {
 const EditIdentity: React.FC = () => {
     const navigation = useNavigation();
     const { isDarkMode } = useTheme();
+    const { user, refreshUser } = useAuth();
+    const [saving, setSaving] = useState(false);
 
-    const [lastname, setLastname] = useState<string>("Sophie");
-    const [firstname, setFirstname] = useState<string>("Labeau");
-    const [city, setCity] = useState<string>("Paris 75018");
-    const [gender, setGender] = useState<string>("Femme");
-    const [birthDate, setBirthDate] = useState<string>("02/01/2000");
+    const [firstname, setFirstname] = useState<string>(user?.first_name || "");
+    const [lastname, setLastname] = useState<string>(user?.last_name || "");
+    const [city, setCity] = useState<string>((user as any)?.city || "");
+    const [gender, setGender] = useState<string>((user as any)?.gender || "");
+    const [birthDate, setBirthDate] = useState<string>(
+        (user as any)?.birth_date
+            ? moment((user as any).birth_date, "YYYY-MM-DD").format("DD/MM/YYYY")
+            : ""
+    );
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            const birthMoment = moment(birthDate, "DD/MM/YYYY");
+            await userService.updateProfile({
+                first_name: firstname,
+                last_name: lastname,
+                city,
+                birth_date: birthMoment.isValid() ? birthMoment.format("YYYY-MM-DD") : undefined,
+            } as any);
+            await refreshUser();
+            Toast.show({ type: "success", text1: "Identité mise à jour" });
+            navigation.goBack();
+        } catch (e: any) {
+            Toast.show({ type: "error", text1: "Erreur", text2: e?.response?.data?.error || "Impossible de sauvegarder" });
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const renderTextInput = (label: string, value: string, setValue: (text: string) => void, editable: boolean = true) => {
         return (
@@ -267,8 +296,8 @@ const EditIdentity: React.FC = () => {
                 contentContainerStyle={{ paddingBottom: 10 }} // Espace pour éviter que le dernier élément soit caché
                 keyboardShouldPersistTaps="handled"
             >
-                {renderTextInput("Prénom", lastname, setLastname)}
-                {renderTextInput("Nom", firstname, setFirstname)}
+                {renderTextInput("Prénom", firstname, setFirstname)}
+                {renderTextInput("Nom", lastname, setLastname)}
                 {renderTextInput("Ville", city, setCity)}
                 {renderTextAgeInput("Age", birthDate, setBirthDate)}
                 {renderTextInput("Genre", gender, setGender, false)}
@@ -278,11 +307,15 @@ const EditIdentity: React.FC = () => {
             </ScrollView>
 
             <View className={`bg-${isDarkMode ? "black" : "white"} p-6 flex-row justify-between`}>
-                <TouchableOpacity className="px-8 py-3 border border-[#FF4D4D] rounded-lg">
+                <TouchableOpacity className="px-8 py-3 border border-[#FF4D4D] rounded-lg" onPress={() => navigation.goBack()}>
                     <Text className="text-[#FF4D4D] font-bold">Annuler</Text>
                 </TouchableOpacity>
-                <TouchableOpacity className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg`}>
-                    <Text className="text-white font-bold">Enregistrer</Text>
+                <TouchableOpacity
+                    className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg ${saving ? "opacity-50" : ""}`}
+                    onPress={handleSave}
+                    disabled={saving}
+                >
+                    <Text className="text-white font-bold">{saving ? "..." : "Enregistrer"}</Text>
                 </TouchableOpacity>
             </View>
         </View>

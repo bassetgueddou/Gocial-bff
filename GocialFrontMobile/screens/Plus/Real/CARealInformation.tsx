@@ -6,23 +6,26 @@ import React, { useState } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
 
-// Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
-    CAVisioRestriction: undefined;
+    CARealRestriction: undefined;
     Main: undefined;
 };
 
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 
 const CARealInformation: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
+    const { updateForm } = useCreateActivity();
 
     const [isEditingPlace, setIsEditingPlace] = useState(false);
     const [isEditingMeeting, setIsEditingMeeting] = useState(false);
+    const [placeName, setPlaceName] = useState("");
+    const [address, setAddress] = useState("");
+    const [meetingPoint, setMeetingPoint] = useState("");
 
     const [showPicker, setShowPicker] = useState(false);
     const [date, setDate] = useState<Date | null>(null);
@@ -78,6 +81,8 @@ const CARealInformation: React.FC = () => {
                                     placeholder="La casa"
                                     placeholderTextColor={isDarkMode ? "#9EA1AB" : "#737373"}
                                     className={`${isDarkMode ? "bg-[#1D1E20] text-white border-white" : "bg-white text-black border-[#065C98]"} border rounded-md px-4 py-3`}
+                                    value={placeName}
+                                    onChangeText={setPlaceName}
                                 />
                             </View>
                         </View>
@@ -104,6 +109,8 @@ const CARealInformation: React.FC = () => {
                         placeholder="Rechercher une adresse"
                         placeholderTextColor={isDarkMode ? "#9EA1AB" : "#737373"}
                         className={`${isDarkMode ? "bg-[#1D1E20] text-white border-white" : "bg-white text-black border-[#065C98]"} border rounded-md px-4 py-3`}
+                        value={address}
+                        onChangeText={setAddress}
                     />
                 </View>
 
@@ -147,6 +154,8 @@ const CARealInformation: React.FC = () => {
                                         placeholder="Rechercher une adresse"
                                         placeholderTextColor={isDarkMode ? "#9EA1AB" : "#737373"}
                                         className={`${isDarkMode ? "bg-[#1D1E20] text-white border-white" : "bg-white text-black border-[#065C98]"} border rounded-md px-4 py-3`}
+                                        value={meetingPoint}
+                                        onChangeText={setMeetingPoint}
                                     />
                                 </View>
                             </View>
@@ -170,7 +179,15 @@ const CARealInformation: React.FC = () => {
             </ScrollView>
 
             <View className="absolute bottom-[5rem] right-4">
-                <TouchableOpacity onPress={() => navigation.navigate("CAVisioRestriction")}
+                <TouchableOpacity onPress={() => {
+                    updateForm({
+                        date: date?.toISOString(),
+                        address: address || undefined,
+                        location: placeName || undefined,
+                        meetingPoint: meetingPoint || undefined,
+                    });
+                    navigation.navigate("CARealRestriction");
+                }}
                     className={`${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} px-6 py-3 rounded-2xl`}>
                     <Text className="text-white font-semibold">Continuer 2/5</Text>
                 </TouchableOpacity>

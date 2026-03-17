@@ -1,70 +1,19 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+﻿import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTheme } from "../ThemeContext";
 import EventCardReal from "../Home/EventCardReal";
 import HeaderMyDiary from "./HeaderMyDiary";
+import { activityService } from "../../src/services/activities";
+import { useAuth } from "../../src/contexts/AuthContext";
+import dayjs from "dayjs";
 
 const MyDiary: React.FC = () => {
     const { isDarkMode } = useTheme();
+    const { user } = useAuth();
 
-    const events = [
-        {
-            id: 1,
-            title: "Soirée à B&CO",
-            date: "Mar. 25 mars. - 08:45",
-            location: "Versailles",
-            category: "Jeu",
-            image: require("../../img/billard-exemple.jpg"),
-            currentParticipants: 1,
-            totalParticipants: 10,
-            userInitials: "EL",
-        },
-        {
-            id: 2,
-            title: "Soirée à B&CO",
-            date: "Mar. 30 mars. - 08:45",
-            location: "Versailles",
-            category: "Jeu",
-            image: require("../../img/billard-exemple.jpg"),
-            currentParticipants: 1,
-            totalParticipants: 10,
-            userInitials: "EL",
-        },
-        {
-            id: 3,
-            title: "Soirée à B&CO",
-            date: "Mar. 30 mars. - 08:45",
-            location: "Versailles",
-            category: "Jeu",
-            image: require("../../img/billard-exemple.jpg"),
-            currentParticipants: 1,
-            totalParticipants: 10,
-            userInitials: "EL",
-        },
-        {
-            id: 4,
-            title: "Soirée à B&CO",
-            date: "Mar. 30 mars. - 08:45",
-            location: "Versailles",
-            category: "Jeu",
-            image: require("../../img/billard-exemple.jpg"),
-            currentParticipants: 1,
-            totalParticipants: 10,
-            userInitials: "EL",
-        },
-        {
-            id: 5,
-            title: "Soirée à B&CO",
-            date: "Mar. 30 mars. - 08:45",
-            location: "Versailles",
-            category: "Jeu",
-            image: require("../../img/billard-exemple.jpg"),
-            currentParticipants: 1,
-            totalParticipants: 10,
-            userInitials: "EL",
-        },
-    ];
+    const [events, setEvents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const today = new Date();
     const [month, setMonth] = useState<number>(today.getMonth());
@@ -73,90 +22,70 @@ const MyDiary: React.FC = () => {
     const [selectedMonth, setSelectedMonth] = useState<number>(today.getMonth());
     const [selectedYear, setSelectedYear] = useState<number>(today.getFullYear());
 
-    const goToPreviousMonth = () => {
-        if (month === 0) {
-            setMonth(11);
-            setYear((prev) => prev - 1);
-        } else {
-            setMonth((prev) => prev - 1);
+    const fetchEvents = useCallback(async () => {
+        try {
+            const [participatingRes, hostingRes] = await Promise.all([
+                activityService.getMyParticipations(1, "validated", true),
+                activityService.getHostedActivities(1, true),
+            ]);
+            const combined = [
+                ...(participatingRes.activities || []),
+                ...(hostingRes.activities || []),
+            ];
+            // Deduplicate by id
+            const unique = Array.from(new Map(combined.map(a => [a.id, a])).values());
+            setEvents(unique);
+        } catch (e) {
+            console.error("Error fetching diary events:", e);
+        } finally {
+            setLoading(false);
         }
+    }, []);
+
+    useEffect(() => { fetchEvents(); }, [fetchEvents]);
+
+    const goToPreviousMonth = () => {
+        if (month === 0) { setMonth(11); setYear((prev) => prev - 1); }
+        else { setMonth((prev) => prev - 1); }
     };
 
     const goToNextMonth = () => {
-        if (month === 11) {
-            setMonth(0);
-            setYear((prev) => prev + 1);
-        } else {
-            setMonth((prev) => prev + 1);
-        }
+        if (month === 11) { setMonth(0); setYear((prev) => prev + 1); }
+        else { setMonth((prev) => prev + 1); }
     };
 
-    const monthNames = [
-        "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-        "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-    ];
+    const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
     const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
     const firstDay = new Date(year, month, 1);
     const firstDayOffset: number = (firstDay.getDay() + 6) % 7;
     const totalDays: number = new Date(year, month + 1, 0).getDate();
 
-    // 🔍 Fonction pour extraire date d'un event (jour/mois)
-    const parseEventDate = (
-        eventDateStr: string
-    ): { day: number; month: number; year: number } | null => {
-        const regex = /(\d{1,2})\s+([a-zéû]+)\./i; // ex: "25 mars."
-        const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+    const initials = user
+        ? `${(user.first_name || "").charAt(0)}${(user.last_name || "").charAt(0)}`.toUpperCase() || "?"
+        : "?";
 
-        const match = eventDateStr.match(regex);
-        if (!match) return null;
-
-        const day = parseInt(match[1], 10);
-        const monthStr = match[2].toLowerCase();
-        const monthIndex = months.indexOf(monthStr);
-        const year = today.getFullYear(); // À adapter si tu ajoutes des années plus tard
-
-        if (day && monthIndex >= 0) {
-            return { day, month: monthIndex, year };
-        }
-
-        return null;
-    };
-
-    // 📅 Affiche un point sous les jours ayant un event
-    const getEventDaysForMonth = (month: number, year: number): number[] => {
+    const getEventDaysForMonth = (m: number, y: number): number[] => {
         return events
-            .map((event) => {
-                const parsed = parseEventDate(event.date);
-                if (
-                    parsed &&
-                    parsed.month === month &&
-                    parsed.year === year
-                ) {
-                    return parsed.day;
-                }
-                return null;
+            .filter(e => {
+                if (!e.date && !e.start_date) return false;
+                const d = dayjs(e.date || e.start_date);
+                return d.month() === m && d.year() === y;
             })
-            .filter((day): day is number => day !== null);
+            .map(e => dayjs(e.date || e.start_date).date());
     };
 
-    // 🔎 Filtre les événements du jour sélectionné
-    const filteredEvents = events.filter((event) => {
-        const parsed = parseEventDate(event.date);
-        return (
-            parsed &&
-            parsed.day === selectedDay &&
-            parsed.month === selectedMonth &&
-            parsed.year === selectedYear
-        );
+    const filteredEvents = events.filter(e => {
+        if (!e.date && !e.start_date) return false;
+        const d = dayjs(e.date || e.start_date);
+        return d.date() === selectedDay && d.month() === selectedMonth && d.year() === selectedYear;
     });
 
     return (
-        <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1`} >
+        <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1`}>
             <HeaderMyDiary title="Mon Agenda" />
 
             <View className="p-5">
-                {/* Calendrier */}
                 <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F3F3F3]"} p-4 rounded-lg mb-4`}>
                     <View className="flex-row justify-between items-center mb-6">
                         <TouchableOpacity onPress={goToPreviousMonth}>
@@ -172,11 +101,7 @@ const MyDiary: React.FC = () => {
 
                     <View className="flex-row">
                         {weekDays.map((day, index) => (
-                            <Text
-                                key={index}
-                                style={{ width: "14.28%" }}
-                                className={`text-center font-semibold ${isDarkMode ? "text-white" : ""}`}
-                            >
+                            <Text key={index} style={{ width: "14.28%" }} className={`text-center font-semibold ${isDarkMode ? "text-white" : ""}`}>
                                 {day}
                             </Text>
                         ))}
@@ -189,56 +114,21 @@ const MyDiary: React.FC = () => {
 
                         {Array.from({ length: totalDays }).map((_, index) => {
                             const dayNum = index + 1;
-                            const isSelected =
-                                dayNum === selectedDay &&
-                                month === selectedMonth &&
-                                year === selectedYear;
-
-                            const isToday =
-                                dayNum === today.getDate() &&
-                                month === today.getMonth() &&
-                                year === today.getFullYear();
-
+                            const isSelected = dayNum === selectedDay && month === selectedMonth && year === selectedYear;
+                            const isToday = dayNum === today.getDate() && month === today.getMonth() && year === today.getFullYear();
                             const eventDays = getEventDaysForMonth(month, year);
                             const hasEvent = eventDays.includes(dayNum);
 
                             return (
-                                <TouchableOpacity
-                                    key={dayNum}
-                                    style={{ width: "14.28%" }}
-                                    className="flex items-center justify-center"
-                                    onPress={() => {
-                                        setSelectedDay(dayNum);
-                                        setSelectedMonth(month);
-                                        setSelectedYear(year);
-                                    }}
-                                >
-                                    <View
-                                        className={`w-10 h-10 items-center justify-center rounded-full ${isSelected
-                                            ? isToday ? "bg-[#175ABC]" : "bg-[#CAD9F2]"
-                                            : isToday
-                                                ? "bg-[#175ABC]"
-                                                : ""
-                                            }`}
-                                    >
-                                        <Text
-                                            className={`text-lg font-bold text-center ${isSelected
-                                                ? isToday ? "text-white" : "text-[#175ABC]"
-                                                : isToday
-                                                    ? "text-white"
-                                                    : isDarkMode
-                                                        ? "text-white"
-                                                        : ""
-                                                }`}
-                                        >
+                                <TouchableOpacity key={dayNum} style={{ width: "14.28%" }} className="flex items-center justify-center"
+                                    onPress={() => { setSelectedDay(dayNum); setSelectedMonth(month); setSelectedYear(year); }}>
+                                    <View className={`w-10 h-10 items-center justify-center rounded-full ${isSelected ? isToday ? "bg-[#175ABC]" : "bg-[#CAD9F2]" : isToday ? "bg-[#175ABC]" : ""}`}>
+                                        <Text className={`text-lg font-bold text-center ${isSelected ? isToday ? "text-white" : "text-[#175ABC]" : isToday ? "text-white" : isDarkMode ? "text-white" : ""}`}>
                                             {dayNum}
                                         </Text>
                                     </View>
                                     {hasEvent && (
-                                        <View
-                                            className={`w-5 h-1 rounded-full ${isSelected ? isToday ? "bg-white" : "bg-[#1A6EDE]" : isToday ? "bg-white" : "bg-[#1A6EDE]"
-                                                } relative bottom-[0.6rem]`}
-                                        />
+                                        <View className={`w-5 h-1 rounded-full ${isSelected ? isToday ? "bg-white" : "bg-[#1A6EDE]" : isToday ? "bg-white" : "bg-[#1A6EDE]"} relative bottom-[0.6rem]`} />
                                     )}
                                 </TouchableOpacity>
                             );
@@ -247,24 +137,45 @@ const MyDiary: React.FC = () => {
                 </View>
             </View>
 
-
-            {/* EventCardReal */}
-            <ScrollView className="mx-[-20px] px-5" contentContainerStyle={{ flexGrow: 1 }}>
-                {filteredEvents.map((event) => (
-                    <EventCardReal
-                        key={event.id}
-                        id={event.id}
-                        title={event.title}
-                        date={event.date}
-                        location={event.location}
-                        category={event.category}
-                        image={event.image}
-                        currentParticipants={event.currentParticipants}
-                        totalParticipants={event.totalParticipants}
-                        userInitials={event.userInitials}
-                    />
-                ))}
-            </ScrollView>
+            {loading ? (
+                <ActivityIndicator size="large" className="mt-8" />
+            ) : (
+                <ScrollView className="mx-[-20px] px-5" contentContainerStyle={{ flexGrow: 1 }}>
+                    {filteredEvents.length === 0 ? (
+                        <View className="items-center mt-8">
+                            <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucune activité ce jour</Text>
+                        </View>
+                    ) : (
+                        filteredEvents.map((event) => (
+                            <EventCardReal
+                                key={event.id}
+                                id={event.id}
+                                title={event.title || "Activité"}
+                                date={dayjs(event.date || event.start_date).format("ddd DD MMM - HH:mm")}
+                                location={event.location || event.city || ""}
+                                category={event.category || ""}
+                                image={event.image_url ? { uri: event.image_url } : require("../../img/billard-exemple.jpg")}
+                                currentParticipants={event.current_participants || 0}
+                                totalParticipants={event.max_participants || 0}
+                                userInitials={initials}
+                                hostId={event.host_id}
+                                isLiked={event.is_liked || false}
+                                likesCount={event.likes_count || 0}
+                                onToggleLike={async () => {
+                                    try {
+                                        if (event.is_liked) {
+                                            await activityService.unlikeActivity(event.id);
+                                        } else {
+                                            await activityService.likeActivity(event.id);
+                                        }
+                                        fetchEvents();
+                                    } catch (e) { console.error(e); }
+                                }}
+                            />
+                        ))
+                    )}
+                </ScrollView>
+            )}
         </View>
     );
 };

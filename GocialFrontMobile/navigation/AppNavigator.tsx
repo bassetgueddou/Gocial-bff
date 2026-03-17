@@ -1,6 +1,7 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useAuth } from "../src/contexts/AuthContext";
+import { CreateActivityProvider } from "../src/contexts/CreateActivityContext";
 
 
 import BottomTabNavigator from "./BottomTabNavigator";
@@ -79,6 +80,7 @@ const AppNavigator = () => {
     const { isAuthenticated } = useAuth();
 
     return (
+        <CreateActivityProvider>
         <Stack.Navigator>
             {!isAuthenticated ? (
                 // ── Auth screens (unauthenticated) ──
@@ -168,6 +170,7 @@ const AppNavigator = () => {
                 </>
             )}
         </Stack.Navigator>
+        </CreateActivityProvider>
     );
 };
 

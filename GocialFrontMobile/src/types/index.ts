@@ -26,6 +26,17 @@ export interface User {
   facebook: string | null;
   tiktok: string | null;
   snapchat: string | null;
+  // Learn more fields
+  languages: string | null;
+  profession: string | null;
+  passions: string | null;
+  studies: string | null;
+  school: string | null;
+  alcohol: string | null;
+  tobacco: string | null;
+  food_preference: string | null;
+  allergies: string | null;
+  children: string | null;
   is_verified: boolean;
   is_active: boolean;
   is_premium: boolean;
@@ -202,6 +213,10 @@ export interface RegisterData {
   company_name?: string;
   siret?: string;
   birth_date?: string;
+  address?: string;
+  siren?: string;
+  rna?: string;
+  profession?: string;
 }
 
 export interface LoginData {

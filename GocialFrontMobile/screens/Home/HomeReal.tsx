@@ -13,8 +13,8 @@ import { useActivities } from "../../src/hooks/useActivities";
 import { API_URL } from "../../src/config";
 
 type RootStackParamList = {
-    ActivityOverview: undefined;
-    ProfilPersonOverview: undefined;
+    ActivityOverview: { activityId: number };
+    ProfilPersonOverview: { userId: number };
 };
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -97,7 +97,7 @@ const HomeReal: React.FC = () => {
 
                                 return (
                                     <TouchableOpacity
-                                        onPress={() => navigation.navigate("ActivityOverview")}
+                                        onPress={() => navigation.navigate("ActivityOverview", { activityId: event.id })}
                                         key={event.id}
                                         className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-white"} rounded-xl shadow-lg mx-2`}
                                         style={{
@@ -120,7 +120,7 @@ const HomeReal: React.FC = () => {
                                                     borderTopRightRadius: 12,
                                                 }}
                                             />
-                                            <TouchableOpacity onPress={() => navigation.navigate("ProfilPersonOverview")} className="absolute top-2 left-2 bg-blue-500 rounded-full h-10 w-10 flex items-center justify-center">
+                                            <TouchableOpacity onPress={() => event.host?.id && navigation.navigate("ProfilPersonOverview", { userId: event.host.id })} className="absolute top-2 left-2 bg-blue-500 rounded-full h-10 w-10 flex items-center justify-center">
                                                 <Text className="text-white font-semibold">{initials}</Text>
                                             </TouchableOpacity>
                                         </View>
@@ -206,6 +206,10 @@ const HomeReal: React.FC = () => {
                                 currentParticipants={event.current_participants}
                                 totalParticipants={event.max_participants}
                                 userInitials={event.host ? getInitials(event.host.first_name, event.host.last_name) : '??'}
+                                isLiked={event.is_liked}
+                                likesCount={event.likes_count || 0}
+                                onToggleLike={toggleLike}
+                                hostId={event.host?.id}
                             />
                         ))
                     )}

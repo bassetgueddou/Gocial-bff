@@ -1,68 +1,103 @@
-import React, { useState } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
+﻿import React from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useTheme } from "../../screens/ThemeContext";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import { useNotifications } from "../../src/hooks/useNotifications";
+import dayjs from "dayjs";
+import "dayjs/locale/fr";
 
-// Définition des noms d'écrans dans le Stack.Navigator
+dayjs.locale("fr");
+
 type RootStackParamList = {
-    ProfilPersonOverview: undefined;
-    ProfilProHome: undefined;
-    ProfilAssoHome: undefined;
-    ProfilProAdd: undefined;
-    ProfilAssoAdd: undefined;
-    ActivityOverview: undefined;
+    ProfilPersonOverview: { userId: number };
+    ActivityOverview: { activityId: number };
     HostEvaluation: undefined;
     ParticipantEvaluation: undefined;
 };
-
-// Typage de la navigation
 type NavigationProp = StackNavigationProp<RootStackParamList>;
-
-const notifications = [
-    { id: 1, idNotif: 1, name: 'Julien L.', message: 'souhaite participer à ton activité', activity: 'Conversation Anglais en ligne', extra: 'le', time: '05/10/2024 à 08:45', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") },
-    { id: 2, idNotif: 1, message: 'Ton activité', activity: 'Conversation Anglais en ligne', extra: 'commence dans', time: '2 heures 🔥', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") },
-    { id: 3, idNotif: 1, message: 'Ton activité', activity: 'Conversation Anglais en ligne', extra: ', c’est pour', time: 'demain 😎', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") },
-    { id: 4, idNotif: 1, message: 'Les participants à ton activité', activity: 'Conversation Anglais en ligne', extra: 'du', time: '5/10/2024 à 21:30', extra2: 'ont été évalués automatiquement 🌟', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") },
-    { id: 5, idNotif: 1, name: 'Julien L.', message: 'a évalué et laissé un commentaire à ton activité', activity: 'Conversation Anglais en ligne', extra: 'du', time: '5/10/2024 à 21:30 🌟', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") },
-    { id: 6, idNotif: 1, name: 'Julien L.', message: 'à évalué ton activité', activity: 'Conversation Anglais en ligne', extra: 'du', time: '5/10/2024 à 21:30 🌟', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") },
-    { id: 7, idNotif: 2, message: 'Souhaites-tu évaluer les participants de ton activité', activity: 'Conversation Anglais en ligne', extra: 'du', time: '5/10/2024 à 21:30 🌟', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") },
-    { id: 8, idNotif: 3, message: 'Souhaites-tu évaluer l\'hôte de l\'activité', activity: 'Conversation Anglais en ligne', extra: 'du', time: '5/10/2024 à 21:30 🌟', date: '1 oct - 18:59', avatar: require("../../img/little-profil-photo.png") }
-
-];
 
 const Activity = () => {
     const { isDarkMode } = useTheme();
-
     const navigation = useNavigation<NavigationProp>();
+    const { notifications, loading, markAsRead } = useNotifications();
+
+    const activityNotifs = notifications.filter(
+        (n) => n.type?.includes("activity") || n.type?.includes("participation") || n.type?.includes("evaluation") || n.type?.includes("like")
+    );
+
+    const getInitials = (name?: string): string => {
+        if (!name) return "?";
+        const parts = name.split(" ");
+        return parts.map((p) => p[0] || "").join("").toUpperCase().slice(0, 2);
+    };
+
+    const formatDate = (dateStr: string): string => {
+        const d = dayjs(dateStr);
+        const now = dayjs();
+        if (d.isSame(now, "day")) return "Aujourd'hui " + d.format("HH:mm");
+        if (d.isSame(now, "year")) return d.format("D MMM - HH:mm");
+        return d.format("D MMM YYYY - HH:mm");
+    };
+
+    const handlePress = (notif: any) => {
+        if (!notif.is_read) markAsRead(notif.id);
+        const data = notif.data || {};
+        if (notif.type?.includes("evaluation") && notif.type?.includes("host")) {
+            navigation.navigate("HostEvaluation");
+        } else if (notif.type?.includes("evaluation")) {
+            navigation.navigate("ParticipantEvaluation");
+        } else if (data.activity_id) {
+            navigation.navigate("ActivityOverview", { activityId: data.activity_id as number });
+        }
+    };
+
+    if (loading) {
+        return (
+            <View className={`flex-1 items-center justify-center ${isDarkMode ? "bg-black" : "bg-white"}`}>
+                <ActivityIndicator size="large" color="#065C98" />
+            </View>
+        );
+    }
+
+    if (activityNotifs.length === 0) {
+        return (
+            <View className={`flex-1 items-center justify-center ${isDarkMode ? "bg-black" : "bg-white"}`}>
+                <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"} text-lg`}>Aucune notification</Text>
+            </View>
+        );
+    }
 
     return (
         <View>
             <ScrollView className={`p-4 ${isDarkMode ? "bg-black" : "bg-white"}`}>
-                {notifications.map((notif) => (
+                {activityNotifs.map((notif) => (
                     <View key={notif.id} className="mb-4">
-                        <TouchableOpacity onPress={() => {
-                            if (notif.idNotif === 2) {
-                                navigation.navigate("HostEvaluation");
-                            } else if (notif.idNotif === 3) {
-                                navigation.navigate("ParticipantEvaluation");
-                            } else {
-                                navigation.navigate("ActivityOverview");
-                            }
-                        }}
-                            className="flex-row items-start">
-
-                            {/* en fonction du type de profil (ProfilPersonOverview/ProfileProHome/ProfilAssoHome/ProfilProAdd/ProfilAssoAdd tu rajoutes) il faut rajouter le bon lien de profile */}
-                            <TouchableOpacity onPress={() => navigation.navigate("ProfilPersonOverview")}>
-                                <Image source={notif.avatar} className="w-10 h-10 rounded-full mr-3 relative top-2" />
-                            </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handlePress(notif)} className="flex-row items-start">
+                            {notif.actor?.avatar_url ? (
+                                <TouchableOpacity onPress={() => notif.actor?.id && navigation.navigate("ProfilPersonOverview", { userId: notif.actor.id })}>
+                                    <Image source={{ uri: notif.actor.avatar_url }} className="w-10 h-10 rounded-full mr-3 relative top-2" />
+                                </TouchableOpacity>
+                            ) : (
+                                <TouchableOpacity onPress={() => notif.actor?.id && navigation.navigate("ProfilPersonOverview", { userId: notif.actor.id })}>
+                                    <View className="w-10 h-10 rounded-full bg-[#9BD3E8] mr-3 relative top-2 items-center justify-center">
+                                        <Text className="text-black font-bold text-sm">{getInitials(notif.actor?.pseudo)}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
                             <View className="flex-1">
-                                <Text className={`text-base ${isDarkMode ? "text-white" : "text-black"}`}>
-                                    <Text className={`font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>{notif.name} </Text>
-                                    {notif.message}<Text className={`${isDarkMode ? "text-[#2676DF]" : "text-blue-600"}`}> {notif.activity}</Text> {notif.extra} <Text className={`${isDarkMode ? "text-[#2676DF]" : "text-blue-600"}`}>{notif.time}</Text> {notif.extra2}
+                                <Text className={`text-base ${isDarkMode ? "text-white" : "text-black"} ${!notif.is_read ? "font-bold" : ""}`}>
+                                    {notif.actor?.pseudo ? (
+                                        <Text className={`font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>{notif.actor.pseudo} </Text>
+                                    ) : null}
+                                    {notif.title}
                                 </Text>
-                                <Text className={`text-xs mt-1 self-end text-right ${isDarkMode ? "text-white" : "text-gray-500"}`}>{notif.date}</Text>
+                                {notif.body ? (
+                                    <Text className={`text-sm mt-1 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>{notif.body}</Text>
+                                ) : null}
+                                <Text className={`text-xs mt-1 self-end text-right ${isDarkMode ? "text-white" : "text-gray-500"}`}>{formatDate(notif.created_at)}</Text>
                             </View>
+                            {!notif.is_read && <View className="w-2 h-2 rounded-full bg-[#1A6EDE] mt-3 ml-2" />}
                         </TouchableOpacity>
                         <View className="h-[1px] bg-gray-300 mt-3" />
                     </View>

@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
+import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
 
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
@@ -48,6 +49,7 @@ const options: { key: ParticipantType; label: string }[] = [
 const CARealRestriction: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
+    const { updateForm } = useCreateActivity();
 
     const [selected, setSelected] = useState<VisibilityOption>("friends");
 
@@ -261,7 +263,16 @@ const CARealRestriction: React.FC = () => {
                              px-4 py-4 flex-row justify-end items-center`}
                 style={{ height: 80 }} >
 
-                <TouchableOpacity onPress={() => navigation.navigate("CANumberParticipants")} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
+                <TouchableOpacity onPress={() => {
+                    updateForm({
+                        visibility: selected as 'public' | 'friends' | 'private',
+                        genderRestriction: selectedType,
+                        minAge: ageRange[0],
+                        maxAge: ageRange[1],
+                        require_approval: validation === 'manuelle',
+                    });
+                    navigation.navigate("CANumberParticipants");
+                }} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
                     <Text className="text-white font-bold">Modifier 3/5</Text>
                 </TouchableOpacity>
             </View>

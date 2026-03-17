@@ -7,6 +7,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import Slider from "@react-native-community/slider";
 import LinearGradient from "react-native-linear-gradient";
+import { useCreateActivity } from "../../src/contexts/CreateActivityContext";
 
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
@@ -21,6 +22,7 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 const CANumberParticipants: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
+    const { updateForm } = useCreateActivity();
 
     const [maxParticipants, setMaxParticipants] = useState(3);
     const [nonGocialParticipants, setNonGocialParticipants] = useState(3);
@@ -152,7 +154,10 @@ const CANumberParticipants: React.FC = () => {
                                          px-4 py-4 flex-row justify-end items-center`}
                 style={{ height: 80 }} >
 
-                <TouchableOpacity onPress={() => navigation.navigate("CATitle")} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
+                <TouchableOpacity onPress={() => {
+                    updateForm({ max_participants: maxParticipants });
+                    navigation.navigate("CATitle");
+                }} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
                     <Text className="text-white font-bold">Modifier 4/5</Text>
                 </TouchableOpacity>
             </View>
