@@ -50,9 +50,9 @@ def get_activities():
     - free_only: show only free activities
     - page, per_page: pagination
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     current_user = User.query.get(current_user_id)
-    
+
     # Parse all the filter params
     activity_type = request.args.get('type', 'real')
     category = request.args.get('category', '').strip()
@@ -176,12 +176,12 @@ def get_activity(activity_id):
     """
     Get full details of an activity.
     """
-    current_user_id = get_jwt_identity()
-    
+    current_user_id = int(get_jwt_identity())
+
     activity = Activity.query.get(activity_id)
     if not activity:
-        return jsonify({'error': 'Activity not found'}), 404
-    
+        return jsonify({'error': 'Activité introuvable'}), 404
+
     # Check visibility
     if activity.visibility == 'friends_only' and activity.host_id != current_user_id:
         # Check if we're friends with host
@@ -192,7 +192,7 @@ def get_activity(activity_id):
         ).first()
         
         if not friendship:
-            return jsonify({'error': 'Activity not found'}), 404
+            return jsonify({'error': 'Activité introuvable'}), 404
     
     # Get participant list if host or if already participating
     include_participants = False
@@ -249,59 +249,72 @@ def create_activity():
     Required fields: title, activity_type, date
     Optional: description, category, max_participants, price, location stuff, etc.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
-    
+
     if not data:
-        return jsonify({'error': 'No data provided'}), 400
-    
+        return jsonify({'error': 'Aucune donnée fournie'}), 400
+
     # Validate required fields
     title = data.get('title', '').strip()
     activity_type = data.get('activity_type', '').strip()
-    date_str = data.get('date', '').strip()
-    
+    date_str = data.get('date', '').strip() if data.get('date') else ''
+    category = data.get('category', '').strip()
+
     if not title:
-        return jsonify({'error': 'Title is required'}), 400
-    
+        return jsonify({'error': 'Le titre est requis'}), 400
+
     if activity_type not in ('real', 'visio'):
-        return jsonify({'error': 'Activity type must be "real" or "visio"'}), 400
-    
+        return jsonify({'error': "Le type doit être 'real' ou 'visio'"}), 400
+
     if not date_str:
-        return jsonify({'error': 'Date is required'}), 400
-    
+        return jsonify({'error': 'La date est requise'}), 400
+
     # Parse date
     try:
         activity_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
     except ValueError:
-        return jsonify({'error': 'Invalid date format'}), 400
-    
+        return jsonify({'error': 'Format de date invalide'}), 400
+
     # Can't create activities in the past
     if activity_date < datetime.utcnow():
-        return jsonify({'error': 'Cannot create activity in the past'}), 400
-    
-    # Build activity
-    # Map frontend fields to model columns
+        return jsonify({'error': 'La date doit être dans le futur'}), 400
+
+    if not category:
+        return jsonify({'error': 'La catégorie est requise'}), 400
+
+    # Validate max_participants if provided
+    max_participants = data.get('max_participants')
+    if max_participants is not None:
+        try:
+            max_participants = int(max_participants)
+            if max_participants <= 0:
+                return jsonify({'error': 'Le nombre de participants doit être positif'}), 400
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Le nombre de participants doit être positif'}), 400
+
+    # Build activity — map frontend fields to model columns
     girls_only = data.get('is_girls_only', False)
     gender = 'female' if girls_only else data.get('gender_restriction', 'all')
-    
+
     approval = data.get('require_approval', True)
     validation = 'manual' if approval else 'auto'
-    
+
     activity = Activity(
         host_id=user_id,
         title=title,
         activity_type=activity_type,
         date=activity_date,
         description=data.get('description', '').strip() or None,
-        category=data.get('category', '').strip() or 'diverse',
-        max_participants=data.get('max_participants'),
+        category=category or 'diverse',
+        max_participants=max_participants,
         price=data.get('price'),
         visibility=data.get('visibility', 'public'),
         gender_restriction=gender,
         validation_type=validation,
         status=data.get('status', 'published'),
     )
-    
+
     # Location for IRL activities
     if activity_type == 'real':
         activity.address = data.get('address', '').strip() or None
@@ -309,21 +322,22 @@ def create_activity():
         activity.postal_code = data.get('postal_code', '').strip() or None
         activity.latitude = data.get('latitude')
         activity.longitude = data.get('longitude')
-    
+
     # Visio link for online activities
     if activity_type == 'visio':
-        activity.visio_url = data.get('visio_link', '').strip() or data.get('visio_url', '').strip() or None
-    
+        visio_link = data.get('visio_link', '') or data.get('visio_url', '')
+        activity.visio_url = visio_link.strip() or None
+
     try:
         db.session.add(activity)
         db.session.commit()
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        current_app.logger.error(f'Activity creation failed: {e}')
-        return jsonify({'error': 'Failed to create activity'}), 500
-    
+        current_app.logger.exception("Erreur lors de la création d'activité")
+        return jsonify({'error': "Erreur serveur lors de la création"}), 500
+
     return jsonify({
-        'message': 'Activity created',
+        'message': 'Activité créée',
         'activity': activity.to_dict(viewer_id=user_id)
     }), 201
 
@@ -340,15 +354,15 @@ def update_activity(activity_id):
     
     Only the host can update.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
-    
+
     activity = Activity.query.get(activity_id)
     if not activity:
-        return jsonify({'error': 'Activity not found'}), 404
-    
+        return jsonify({'error': 'Activité introuvable'}), 404
+
     if activity.host_id != user_id:
-        return jsonify({'error': 'Not authorized'}), 403
+        return jsonify({'error': 'Non autorisé'}), 403
     
     # Direct-mapped fields
     simple_fields = [
@@ -378,10 +392,10 @@ def update_activity(activity_id):
         try:
             new_date = datetime.fromisoformat(data['date'].replace('Z', '+00:00'))
             if new_date < datetime.utcnow():
-                return jsonify({'error': 'Cannot set date in the past'}), 400
+                return jsonify({'error': 'Impossible de définir une date dans le passé'}), 400
             activity.date = new_date
         except ValueError:
-            return jsonify({'error': 'Invalid date format'}), 400
+            return jsonify({'error': 'Format de date invalide'}), 400
     
     # Location update
     if 'latitude' in data and 'longitude' in data:
@@ -393,10 +407,10 @@ def update_activity(activity_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Activity update failed: {e}')
-        return jsonify({'error': 'Update failed'}), 500
-    
+        return jsonify({'error': 'Échec de la mise à jour'}), 500
+
     return jsonify({
-        'message': 'Activity updated',
+        'message': 'Activité mise à jour',
         'activity': activity.to_dict(viewer_id=user_id)
     }), 200
 
@@ -413,22 +427,22 @@ def delete_activity(activity_id):
     
     Actually changes status to 'cancelled' - we don't hard delete.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     activity = Activity.query.get(activity_id)
     if not activity:
-        return jsonify({'error': 'Activity not found'}), 404
-    
+        return jsonify({'error': 'Activité introuvable'}), 404
+
     if activity.host_id != user_id:
-        return jsonify({'error': 'Not authorized'}), 403
-    
+        return jsonify({'error': 'Non autorisé'}), 403
+
     # Soft delete by marking as cancelled
     activity.status = 'cancelled'
     db.session.commit()
-    
+
     # TODO: Notify participants that activity was cancelled
-    
-    return jsonify({'message': 'Activity cancelled'}), 200
+
+    return jsonify({'message': 'Activité annulée'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -444,38 +458,38 @@ def request_participation(activity_id):
     If approval is required, creates a pending request.
     Otherwise, directly validates participation.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json() or {}
-    
+
     activity = Activity.query.get(activity_id)
     if not activity:
-        return jsonify({'error': 'Activity not found'}), 404
-    
+        return jsonify({'error': 'Activité introuvable'}), 404
+
     # Can't join your own activity
     if activity.host_id == user_id:
-        return jsonify({'error': 'You cannot join your own activity'}), 400
-    
+        return jsonify({'error': 'Vous ne pouvez pas rejoindre votre propre activité'}), 400
+
     # Check if activity is full
     if activity.is_full:
-        return jsonify({'error': 'Activity is full'}), 400
-    
+        return jsonify({'error': "L'activité est complète"}), 400
+
     # Check if activity is in the past
     if activity.is_past:
-        return jsonify({'error': 'Activity has already ended'}), 400
-    
+        return jsonify({'error': "L'activité est déjà terminée"}), 400
+
     # Check if already participating
     existing = Participation.query.filter_by(
         activity_id=activity_id,
         user_id=user_id
     ).first()
-    
+
     if existing:
         if existing.status == 'validated':
-            return jsonify({'error': 'Already participating'}), 400
+            return jsonify({'error': 'Vous participez déjà'}), 400
         elif existing.status == 'pending':
-            return jsonify({'error': 'Request already pending'}), 400
+            return jsonify({'error': 'Demande déjà en attente'}), 400
         elif existing.status == 'rejected':
-            return jsonify({'error': 'Your request was rejected'}), 400
+            return jsonify({'error': 'Votre demande a été refusée'}), 400
     
     # Create participation
     needs_approval = activity.validation_type == 'manual'
@@ -499,7 +513,7 @@ def request_participation(activity_id):
     
     # TODO: Send notification to host
     
-    message = 'Participation requested' if status == 'pending' else 'Joined activity'
+    message = 'Demande de participation envoyée' if status == 'pending' else 'Vous participez à cette activité'
     
     return jsonify({
         'message': message,
@@ -518,15 +532,15 @@ def cancel_participation(activity_id):
     """
     Cancel your participation in an activity.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     participation = Participation.query.filter_by(
         activity_id=activity_id,
         user_id=user_id
     ).first()
-    
+
     if not participation:
-        return jsonify({'error': 'You are not participating'}), 404
+        return jsonify({'error': "Vous ne participez pas à cette activité"}), 404
     
     # Decrement participant count if they were validated
     if participation.status == 'validated':
@@ -539,7 +553,7 @@ def cancel_participation(activity_id):
     db.session.delete(participation)
     db.session.commit()
     
-    return jsonify({'message': 'Participation cancelled'}), 200
+    return jsonify({'message': 'Participation annulée'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -554,44 +568,44 @@ def handle_participation(activity_id, user_id):
     
     Only the host can do this.
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     data = request.get_json() or {}
-    
+
     activity = Activity.query.get(activity_id)
     if not activity:
-        return jsonify({'error': 'Activity not found'}), 404
-    
+        return jsonify({'error': 'Activité introuvable'}), 404
+
     if activity.host_id != current_user_id:
-        return jsonify({'error': 'Not authorized'}), 403
-    
+        return jsonify({'error': 'Non autorisé'}), 403
+
     participation = Participation.query.filter_by(
         activity_id=activity_id,
         user_id=user_id
     ).first()
-    
+
     if not participation:
-        return jsonify({'error': 'Participation request not found'}), 404
-    
+        return jsonify({'error': 'Demande de participation introuvable'}), 404
+
     action = data.get('action', '').lower()
-    
+
     if action == 'accept':
         # Check if activity is full
         if activity.is_full:
-            return jsonify({'error': 'Activity is full'}), 400
-        
+            return jsonify({'error': "L'activité est complète"}), 400
+
         participation.status = 'validated'
         participation.validated_at = datetime.utcnow()
         activity.current_participants = (activity.current_participants or 1) + 1
         if activity.current_participants >= activity.max_participants:
             activity.status = 'full'
-        message = 'Participation accepted'
-        
+        message = 'Participation acceptée'
+
     elif action == 'reject':
         participation.status = 'rejected'
-        message = 'Participation rejected'
-        
+        message = 'Participation refusée'
+
     else:
-        return jsonify({'error': 'Action must be "accept" or "reject"'}), 400
+        return jsonify({'error': 'L\'action doit être "accept" ou "reject"'}), 400
     
     db.session.commit()
     
@@ -612,15 +626,15 @@ def get_participants(activity_id):
     
     Only accessible by the host.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     activity = Activity.query.get(activity_id)
     if not activity:
-        return jsonify({'error': 'Activity not found'}), 404
-    
+        return jsonify({'error': 'Activité introuvable'}), 404
+
     if activity.host_id != user_id:
-        return jsonify({'error': 'Not authorized'}), 403
-    
+        return jsonify({'error': 'Non autorisé'}), 403
+
     participations = Participation.query.filter_by(activity_id=activity_id).all()
     
     result = {
@@ -652,26 +666,26 @@ def like_activity(activity_id):
     """
     Like an activity - saves it to favorites.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     activity = Activity.query.get(activity_id)
     if not activity:
-        return jsonify({'error': 'Activity not found'}), 404
-    
+        return jsonify({'error': 'Activité introuvable'}), 404
+
     existing = ActivityLike.query.filter_by(
         activity_id=activity_id,
         user_id=user_id
     ).first()
     
     if existing:
-        return jsonify({'message': 'Already liked'}), 200
-    
+        return jsonify({'message': 'Activité déjà aimée'}), 200
+
     like = ActivityLike(activity_id=activity_id, user_id=user_id)
     activity.likes_count = (activity.likes_count or 0) + 1
     db.session.add(like)
     db.session.commit()
-    
-    return jsonify({'message': 'Activity liked'}), 201
+
+    return jsonify({'message': 'Activité aimée'}), 201
 
 
 @activities_bp.route('/<int:activity_id>/like', methods=['DELETE'])
@@ -680,15 +694,15 @@ def unlike_activity(activity_id):
     """
     Remove like from an activity.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     like = ActivityLike.query.filter_by(
         activity_id=activity_id,
         user_id=user_id
     ).first()
-    
+
     if not like:
-        return jsonify({'message': 'Not liked'}), 200
+        return jsonify({'message': 'Activité non aimée'}), 200
     
     activity = Activity.query.get(activity_id)
     if activity:
@@ -696,7 +710,7 @@ def unlike_activity(activity_id):
     db.session.delete(like)
     db.session.commit()
     
-    return jsonify({'message': 'Like removed'}), 200
+    return jsonify({'message': 'Like retiré'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -709,7 +723,7 @@ def get_liked_activities():
     """
     Get activities you've liked.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 20, type=int), 50)
     
@@ -741,7 +755,7 @@ def get_my_hosted_activities():
     """
     Get activities you're hosting.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 20, type=int), 50)
     include_past = request.args.get('include_past', 'false').lower() == 'true'
@@ -775,7 +789,7 @@ def get_my_participations():
     """
     Get activities you're participating in.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 20, type=int), 50)
     status = request.args.get('status', 'validated')  # validated, pending, all

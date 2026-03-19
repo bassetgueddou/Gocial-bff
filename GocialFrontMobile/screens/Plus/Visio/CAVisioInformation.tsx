@@ -8,6 +8,20 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
 
+const ProgressBar = ({ current, total }: { current: number; total: number }) => {
+    const { isDarkMode } = useTheme();
+    return (
+        <View className="flex-row justify-center items-center gap-2 py-3">
+            {Array.from({ length: total }, (_, i) => (
+                <View
+                    key={i}
+                    className={`h-2 rounded-full ${i < current ? 'w-8 bg-[#065C98]' : isDarkMode ? 'w-2 bg-gray-700' : 'w-2 bg-gray-300'}`}
+                />
+            ))}
+        </View>
+    );
+};
+
 type RootStackParamList = {
     CAVisioRestriction: undefined;
     Main: undefined;
@@ -60,6 +74,8 @@ const CAVisioInformation: React.FC = () => {
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+
+            <ProgressBar current={2} total={5} />
 
             {/* ScrollView contenant tout le contenu */}
             <ScrollView className={`${isDarkMode ? "bg-black" : "bg-white"} min-h-screen`} contentContainerStyle={{ paddingBottom: 300 }}>

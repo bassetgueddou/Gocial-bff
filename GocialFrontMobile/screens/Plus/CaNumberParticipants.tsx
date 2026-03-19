@@ -9,6 +9,20 @@ import Slider from "@react-native-community/slider";
 import LinearGradient from "react-native-linear-gradient";
 import { useCreateActivity } from "../../src/contexts/CreateActivityContext";
 
+const ProgressBar = ({ current, total }: { current: number; total: number }) => {
+    const { isDarkMode } = useTheme();
+    return (
+        <View className="flex-row justify-center items-center gap-2 py-3">
+            {Array.from({ length: total }, (_, i) => (
+                <View
+                    key={i}
+                    className={`h-2 rounded-full ${i < current ? 'w-8 bg-[#065C98]' : isDarkMode ? 'w-2 bg-gray-700' : 'w-2 bg-gray-300'}`}
+                />
+            ))}
+        </View>
+    );
+};
+
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
     CATitle: undefined;
@@ -43,6 +57,8 @@ const CANumberParticipants: React.FC = () => {
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+
+            <ProgressBar current={4} total={5} />
 
             {/* ScrollView contenant tout le contenu */}
             <ScrollView className={`${isDarkMode ? "bg-black" : "bg-white"} min-h-screen`} contentContainerStyle={{ paddingBottom: 300 }}>
@@ -97,7 +113,7 @@ const CANumberParticipants: React.FC = () => {
                     >
                         <View style={{ justifyContent: "center", alignItems: "center" }}>
                             <Text style={{ color: "black", fontWeight: "bold", fontSize: 16 }}>
-                                Passe à Gosial Premium +
+                                Passe à Gocial Premium +
                             </Text>
                             <Text style={{ color: "black", fontSize: 14 }}>
                                 Augmente le nombre maximum de participants
@@ -158,7 +174,7 @@ const CANumberParticipants: React.FC = () => {
                     updateForm({ max_participants: maxParticipants });
                     navigation.navigate("CATitle");
                 }} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
-                    <Text className="text-white font-bold">Modifier 4/5</Text>
+                    <Text className="text-white font-bold">Continuer 4/5</Text>
                 </TouchableOpacity>
             </View>
 

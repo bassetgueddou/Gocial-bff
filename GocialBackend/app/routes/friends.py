@@ -25,7 +25,7 @@ def get_friends():
     """
     Get list of accepted friends.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 50, type=int), 100)
     
@@ -66,7 +66,7 @@ def get_friend_requests():
     """
     Get pending friend requests (both sent and received).
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     # Requests we received
     received = Friendship.query.filter_by(
@@ -116,16 +116,16 @@ def send_friend_request(target_user_id):
     """
     Send a friend request to another user.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     # Can't friend yourself bro
     if target_user_id == user_id:
-        return jsonify({'error': 'Cannot send request to yourself'}), 400
-    
+        return jsonify({'error': 'Vous ne pouvez pas vous ajouter vous-même'}), 400
+
     # Check if target exists
     target = User.query.get(target_user_id)
     if not target or not target.is_active:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
     
     # Check existing friendship status
     existing = Friendship.query.filter(
@@ -135,7 +135,7 @@ def send_friend_request(target_user_id):
     
     if existing:
         if existing.status == 'accepted':
-            return jsonify({'error': 'Already friends'}), 400
+            return jsonify({'error': 'Vous êtes déjà amis'}), 400
         elif existing.status == 'pending':
             # Maybe they already sent us a request - accept it
             if existing.user_id == target_user_id:
@@ -143,12 +143,12 @@ def send_friend_request(target_user_id):
                 existing.accepted_at = datetime.utcnow()
                 existing.updated_at = datetime.utcnow()
                 db.session.commit()
-                return jsonify({'message': 'Friend request accepted'}), 200
+                return jsonify({'message': 'Demande d\'ami acceptée'}), 200
             else:
-                return jsonify({'error': 'Request already pending'}), 400
+                return jsonify({'error': 'Demande déjà envoyée'}), 400
         elif existing.status == 'blocked':
             # One of us blocked the other
-            return jsonify({'error': 'Cannot send request'}), 400
+            return jsonify({'error': 'Impossible d\'envoyer une demande'}), 400
     
     # Create new friendship request
     friendship = Friendship(
@@ -163,7 +163,7 @@ def send_friend_request(target_user_id):
     # TODO: Send notification to target
     
     return jsonify({
-        'message': 'Friend request sent',
+        'message': "Demande d'ami envoyée",
         'friendship_id': friendship.id
     }), 201
 
@@ -178,18 +178,18 @@ def accept_friend_request(friendship_id):
     """
     Accept a pending friend request.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     friendship = Friendship.query.get(friendship_id)
     if not friendship:
-        return jsonify({'error': 'Request not found'}), 404
-    
+        return jsonify({'error': 'Demande introuvable'}), 404
+
     # Must be the recipient to accept
     if friendship.friend_id != user_id:
-        return jsonify({'error': 'Not authorized'}), 403
-    
+        return jsonify({'error': 'Non autorisé'}), 403
+
     if friendship.status != 'pending':
-        return jsonify({'error': 'Request is not pending'}), 400
+        return jsonify({'error': "La demande n'est pas en attente"}), 400
     
     friendship.status = 'accepted'
     friendship.accepted_at = datetime.utcnow()
@@ -198,7 +198,7 @@ def accept_friend_request(friendship_id):
     
     # TODO: Notify the sender
     
-    return jsonify({'message': 'Friend request accepted'}), 200
+    return jsonify({'message': "Demande d'ami acceptée"}), 200
 
 
 # ---------------------------------------------------------------------
@@ -211,24 +211,24 @@ def reject_friend_request(friendship_id):
     """
     Reject a pending friend request.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     friendship = Friendship.query.get(friendship_id)
     if not friendship:
-        return jsonify({'error': 'Request not found'}), 404
-    
+        return jsonify({'error': 'Demande introuvable'}), 404
+
     # Must be the recipient to reject
     if friendship.friend_id != user_id:
-        return jsonify({'error': 'Not authorized'}), 403
-    
+        return jsonify({'error': 'Non autorisé'}), 403
+
     if friendship.status != 'pending':
-        return jsonify({'error': 'Request is not pending'}), 400
+        return jsonify({'error': "La demande n'est pas en attente"}), 400
     
     # Just delete it - they can try again later
     db.session.delete(friendship)
     db.session.commit()
     
-    return jsonify({'message': 'Friend request rejected'}), 200
+    return jsonify({'message': "Demande d'ami refusée"}), 200
 
 
 # ---------------------------------------------------------------------
@@ -241,23 +241,23 @@ def cancel_friend_request(friendship_id):
     """
     Cancel a friend request you sent.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     friendship = Friendship.query.get(friendship_id)
     if not friendship:
-        return jsonify({'error': 'Request not found'}), 404
-    
+        return jsonify({'error': 'Demande introuvable'}), 404
+
     # Must be the sender to cancel
     if friendship.user_id != user_id:
-        return jsonify({'error': 'Not authorized'}), 403
-    
+        return jsonify({'error': 'Non autorisé'}), 403
+
     if friendship.status != 'pending':
-        return jsonify({'error': 'Cannot cancel, request is not pending'}), 400
+        return jsonify({'error': "Impossible d'annuler, la demande n'est pas en attente"}), 400
     
     db.session.delete(friendship)
     db.session.commit()
     
-    return jsonify({'message': 'Request cancelled'}), 200
+    return jsonify({'message': 'Demande annulée'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -270,7 +270,7 @@ def remove_friend(friend_id):
     """
     Remove someone from your friends list.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     friendship = Friendship.query.filter(
         ((Friendship.user_id == user_id) & (Friendship.friend_id == friend_id)) |
@@ -279,12 +279,12 @@ def remove_friend(friend_id):
     ).first()
     
     if not friendship:
-        return jsonify({'error': 'Not friends'}), 404
-    
+        return jsonify({'error': 'Vous n\'êtes pas amis'}), 404
+
     db.session.delete(friendship)
     db.session.commit()
-    
-    return jsonify({'message': 'Friend removed'}), 200
+
+    return jsonify({'message': 'Ami retiré'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -296,18 +296,18 @@ def remove_friend(friend_id):
 def block_user(target_user_id):
     """
     Block a user.
-    
+
     They won't be able to see your profile or activities,
     send you messages, or add you as friend.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     if target_user_id == user_id:
-        return jsonify({'error': 'Cannot block yourself'}), 400
-    
+        return jsonify({'error': 'Vous ne pouvez pas vous bloquer vous-même'}), 400
+
     target = User.query.get(target_user_id)
     if not target:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
     
     # Check existing relationship
     friendship = Friendship.query.filter(
@@ -336,7 +336,7 @@ def block_user(target_user_id):
     
     db.session.commit()
     
-    return jsonify({'message': 'User blocked'}), 200
+    return jsonify({'message': 'Utilisateur bloqué'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -349,7 +349,7 @@ def unblock_user(target_user_id):
     """
     Unblock a previously blocked user.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     # Find the block (we must be the one who blocked)
     friendship = Friendship.query.filter_by(
@@ -359,12 +359,12 @@ def unblock_user(target_user_id):
     ).first()
     
     if not friendship:
-        return jsonify({'error': 'User is not blocked'}), 404
-    
+        return jsonify({'error': "Cet utilisateur n'est pas bloqué"}), 404
+
     db.session.delete(friendship)
     db.session.commit()
-    
-    return jsonify({'message': 'User unblocked'}), 200
+
+    return jsonify({'message': 'Utilisateur débloqué'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -377,7 +377,7 @@ def get_blocked_users():
     """
     Get list of users you've blocked.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     blocks = Friendship.query.filter_by(
         user_id=user_id,
@@ -405,10 +405,10 @@ def get_blocked_users():
 def get_friendship_status(target_user_id):
     """
     Check the friendship status with another user.
-    
+
     Returns: none, pending_sent, pending_received, friends, blocked
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     friendship = Friendship.query.filter(
         ((Friendship.user_id == user_id) & (Friendship.friend_id == target_user_id)) |

@@ -13,11 +13,15 @@ type RootStackParamList = {
 };
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
+type DiaryFilter = "all" | "participations" | "liked";
+
 interface HeaderMyDiaryProps {
     title: string;
+    filter?: DiaryFilter;
+    onFilterChange?: (f: DiaryFilter) => void;
 }
 
-const HeaderMyDiary: React.FC<HeaderMyDiaryProps> = ({ title }) => {
+const HeaderMyDiary: React.FC<HeaderMyDiaryProps> = ({ title, filter = "all", onFilterChange }) => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
     const { user } = useAuth();
@@ -37,20 +41,27 @@ const HeaderMyDiary: React.FC<HeaderMyDiaryProps> = ({ title }) => {
         >
             <SafeAreaView>
                 <MessageModal visible={modalMessageVisible} onClose={() => setModalMessageVisible(false)} />
-                <FilterDiaryModal visible={modalFilterDiaryVisible} onClose={() => setModalFilterDiaryVisible(false)} />
+                <FilterDiaryModal
+                    visible={modalFilterDiaryVisible}
+                    onClose={() => setModalFilterDiaryVisible(false)}
+                    filter={filter}
+                    onFilterChange={(f) => {
+                        if (onFilterChange) onFilterChange(f);
+                    }}
+                />
 
                 <View className="flex-row items-center justify-between p-4">
-                    <TouchableOpacity onPress={() => navigation.navigate("GeneralParameter")} className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center">
+                    <TouchableOpacity onPress={() => navigation.navigate("GeneralParameter")} className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
                         {user?.avatar_url ? (
                             <Image source={{ uri: user.avatar_url }} className="w-12 h-12 rounded-full" />
                         ) : (
-                            <Text className="text-black font-bold">{initials}</Text>
+                            <Text className="text-white font-bold text-base">{initials}</Text>
                         )}
                     </TouchableOpacity>
 
-                    <Text className="text-white text-lg font-semibold relative right-2">{title}</Text>
+                    <Text className="text-white text-lg font-semibold">{title}</Text>
 
-                    <TouchableOpacity onPress={() => setModalMessageVisible(true)} className="relative bottom-4">
+                    <TouchableOpacity onPress={() => setModalMessageVisible(true)}>
                         <Image source={require("../../img/message.png")} className="h-8 w-8" />
                     </TouchableOpacity>
                 </View>

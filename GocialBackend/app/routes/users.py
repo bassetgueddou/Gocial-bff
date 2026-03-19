@@ -35,15 +35,15 @@ def get_user(user_id):
     
     If viewing your own profile, includes private info too.
     """
-    current_user_id = get_jwt_identity()
+    current_user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
-    
+
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     # Check if user is deactivated (unless it's yourself)
     if not user.is_active and user_id != current_user_id:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
     
     # Own profile gets full access
     is_own_profile = user_id == current_user_id
@@ -83,15 +83,15 @@ def update_profile():
     
     Only updates fields that are provided in the request.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
-    
+
     if not data:
-        return jsonify({'error': 'No data provided'}), 400
-    
+        return jsonify({'error': 'Aucune donnée fournie'}), 400
+
     user = User.query.get(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
     
     # Fields that can be updated
     allowed_fields = [
@@ -129,7 +129,7 @@ def update_profile():
         if new_pseudo != user.pseudo:
             existing = User.query.filter_by(pseudo=new_pseudo).first()
             if existing and existing.id != user_id:
-                return jsonify({'error': 'This pseudo is already taken'}), 409
+                return jsonify({'error': 'Ce pseudo est déjà pris'}), 409
             user.pseudo = new_pseudo
     
     # Handle location update
@@ -149,7 +149,7 @@ def update_profile():
             try:
                 user.birth_date = datetime.strptime(bd, '%Y-%m-%d').date()
             except ValueError:
-                return jsonify({'error': 'Invalid birth_date format. Use YYYY-MM-DD'}), 400
+                return jsonify({'error': 'Format de date de naissance invalide (AAAA-MM-JJ attendu)'}), 400
         else:
             user.birth_date = None
     
@@ -158,10 +158,10 @@ def update_profile():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Profile update failed: {e}')
-        return jsonify({'error': 'Update failed'}), 500
-    
+        return jsonify({'error': 'Échec de la mise à jour'}), 500
+
     return jsonify({
-        'message': 'Profile updated',
+        'message': 'Profil mis à jour',
         'user': user.to_dict(include_private=True, include_settings=True)
     }), 200
 
@@ -178,22 +178,22 @@ def upload_avatar():
     
     Accepts multipart/form-data with 'file' field.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
-    
+
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-    
+        return jsonify({'error': 'Aucun fichier envoyé'}), 400
+
     file = request.files['file']
-    
+
     if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
+        return jsonify({'error': 'Aucun fichier sélectionné'}), 400
+
     if not allowed_file(file.filename):
-        return jsonify({'error': 'File type not allowed'}), 400
+        return jsonify({'error': 'Type de fichier non autorisé'}), 400
     
     # Generate safe filename
     ext = file.filename.rsplit('.', 1)[1].lower()
@@ -217,7 +217,7 @@ def upload_avatar():
     db.session.commit()
     
     return jsonify({
-        'message': 'Avatar uploaded',
+        'message': 'Avatar mis à jour',
         'avatar_url': user.avatar_url
     }), 200
 
@@ -238,8 +238,8 @@ def search_users():
     - city: city filter
     - page, per_page: pagination
     """
-    current_user_id = get_jwt_identity()
-    
+    current_user_id = int(get_jwt_identity())
+
     query_text = request.args.get('q', '').strip()
     user_type = request.args.get('type')
     city = request.args.get('city', '').strip()
@@ -301,12 +301,12 @@ def get_user_activities(user_id):
     """
     Get activities hosted by a specific user.
     """
-    current_user_id = get_jwt_identity()
-    
+    current_user_id = int(get_jwt_identity())
+
     user = User.query.get(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 20, type=int), 50)
     include_past = request.args.get('include_past', 'false').lower() == 'true'
@@ -346,22 +346,22 @@ def deactivate_account():
     """
     Soft-delete account. Can be reactivated later.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json() or {}
-    
+
     user = User.query.get(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     # Require password confirmation for safety
     password = data.get('password', '')
     if not user.check_password(password):
-        return jsonify({'error': 'Incorrect password'}), 401
-    
+        return jsonify({'error': 'Mot de passe incorrect'}), 401
+
     user.is_active = False
     db.session.commit()
-    
-    return jsonify({'message': 'Account deactivated'}), 200
+
+    return jsonify({'message': 'Compte désactivé'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -376,22 +376,22 @@ def delete_account():
     
     This is irreversible - we require password confirmation.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json() or {}
-    
+
     user = User.query.get(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     password = data.get('password', '')
     if not user.check_password(password):
-        return jsonify({'error': 'Incorrect password'}), 401
-    
+        return jsonify({'error': 'Mot de passe incorrect'}), 401
+
     # Confirmation phrase for extra safety
     confirmation = data.get('confirmation', '')
     if confirmation != 'DELETE MY ACCOUNT':
-        return jsonify({'error': 'Please confirm with "DELETE MY ACCOUNT"'}), 400
-    
+        return jsonify({'error': 'Veuillez confirmer avec "DELETE MY ACCOUNT"'}), 400
+
     try:
         # This will cascade delete participations, etc.
         db.session.delete(user)
@@ -399,6 +399,6 @@ def delete_account():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Account deletion failed: {e}')
-        return jsonify({'error': 'Deletion failed'}), 500
-    
-    return jsonify({'message': 'Account permanently deleted'}), 200
+        return jsonify({'error': 'Échec de la suppression'}), 500
+
+    return jsonify({'message': 'Compte supprimé définitivement'}), 200

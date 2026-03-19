@@ -1,181 +1,326 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Image } from "react-native";
+import { Calendar } from "react-native-calendars";
 import { useTheme } from "../ThemeContext";
-import EventCardReal from "../Home/EventCardReal";
 import HeaderMyDiary from "./HeaderMyDiary";
 import { activityService } from "../../src/services/activities";
-import { useAuth } from "../../src/contexts/AuthContext";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import type { Activity } from "../../src/types";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import dayjs from "dayjs";
+
+type DiaryFilter = "all" | "participations" | "liked";
+
+type RootStackParamList = {
+    ActivityOverview: { activityId: number };
+};
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const MyDiary: React.FC = () => {
     const { isDarkMode } = useTheme();
-    const { user } = useAuth();
+    const navigation = useNavigation<NavigationProp>();
 
-    const [events, setEvents] = useState<any[]>([]);
+    const [participatingActivities, setParticipatingActivities] = useState<Activity[]>([]);
+    const [hostedActivities, setHostedActivities] = useState<Activity[]>([]);
+    const [likedActivities, setLikedActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const today = new Date();
-    const [month, setMonth] = useState<number>(today.getMonth());
-    const [year, setYear] = useState<number>(today.getFullYear());
-    const [selectedDay, setSelectedDay] = useState<number>(today.getDate());
-    const [selectedMonth, setSelectedMonth] = useState<number>(today.getMonth());
-    const [selectedYear, setSelectedYear] = useState<number>(today.getFullYear());
+    const [refreshing, setRefreshing] = useState(false);
+    const [filter, setFilter] = useState<DiaryFilter>("all");
+    const [selectedDay, setSelectedDay] = useState<string>(
+        new Date().toISOString().split("T")[0]
+    );
 
     const fetchEvents = useCallback(async () => {
         try {
-            const [participatingRes, hostingRes] = await Promise.all([
+            const [participatingRes, hostingRes, likedRes] = await Promise.all([
                 activityService.getMyParticipations(1, "validated", true),
                 activityService.getHostedActivities(1, true),
+                activityService.getLikedActivities(1),
             ]);
-            const combined = [
-                ...(participatingRes.activities || []),
-                ...(hostingRes.activities || []),
-            ];
-            // Deduplicate by id
-            const unique = Array.from(new Map(combined.map(a => [a.id, a])).values());
-            setEvents(unique);
+            setParticipatingActivities(participatingRes.activities || []);
+            setHostedActivities(hostingRes.activities || []);
+            setLikedActivities(likedRes.activities || []);
         } catch (e) {
             console.error("Error fetching diary events:", e);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }, []);
 
     useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
-    const goToPreviousMonth = () => {
-        if (month === 0) { setMonth(11); setYear((prev) => prev - 1); }
-        else { setMonth((prev) => prev - 1); }
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchEvents();
+    }, [fetchEvents]);
+
+    // Build markedDates for react-native-calendars
+    const markedDates = useMemo(() => {
+        const marks: Record<string, any> = {};
+
+        const addDot = (dateStr: string, color: string) => {
+            const day = dateStr.split("T")[0];
+            if (!marks[day]) marks[day] = { dots: [] };
+            if (!marks[day].dots) marks[day].dots = [];
+            if (!marks[day].dots.find((d: any) => d.color === color)) {
+                marks[day].dots.push({ color });
+            }
+        };
+
+        [...participatingActivities, ...hostedActivities].forEach((a) => {
+            if (a.date) addDot(a.date, "#065C98");
+        });
+
+        likedActivities.forEach((a) => {
+            if (a.date) addDot(a.date, "#FF4D4D");
+        });
+
+        if (selectedDay) {
+            marks[selectedDay] = {
+                ...(marks[selectedDay] || {}),
+                selected: true,
+                selectedColor: "#065C98",
+            };
+        }
+
+        return marks;
+    }, [participatingActivities, hostedActivities, likedActivities, selectedDay]);
+
+    // Activities to display for the selected day + filter
+    const activitiesForDay = useMemo(() => {
+        let pool: Activity[] = [];
+
+        if (filter === "all") {
+            const allMap = new Map<number, Activity>();
+            [...participatingActivities, ...hostedActivities, ...likedActivities].forEach((a) => {
+                if (!allMap.has(a.id)) allMap.set(a.id, a);
+            });
+            pool = Array.from(allMap.values());
+        } else if (filter === "participations") {
+            const allMap = new Map<number, Activity>();
+            [...participatingActivities, ...hostedActivities].forEach((a) => {
+                if (!allMap.has(a.id)) allMap.set(a.id, a);
+            });
+            pool = Array.from(allMap.values());
+        } else {
+            pool = likedActivities;
+        }
+
+        return pool.filter((a) => {
+            if (!a.date) return false;
+            return a.date.split("T")[0] === selectedDay;
+        });
+    }, [filter, selectedDay, participatingActivities, hostedActivities, likedActivities]);
+
+    const renderEmptyState = () => {
+        let message = "Aucune activité ce jour";
+        let subMessage = "Explorez les événements !";
+
+        if (filter === "liked") {
+            message = "Vous n'avez pas encore liké d'activité.";
+            subMessage = "Découvrez des activités et likez-les !";
+        } else if (filter === "participations") {
+            message = "Vous ne participez à aucune activité.";
+            subMessage = "Rejoignez une activité près de chez vous !";
+        }
+
+        return (
+            <View className="items-center py-10">
+                <Ionicons
+                    name="calendar-outline"
+                    size={48}
+                    color={isDarkMode ? "#4B5563" : "#D1D5DB"}
+                />
+                <Text className={`mt-3 text-base font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    {message}
+                </Text>
+                <Text className={`text-sm mt-1 ${isDarkMode ? "text-gray-600" : "text-gray-400"}`}>
+                    {subMessage}
+                </Text>
+            </View>
+        );
     };
-
-    const goToNextMonth = () => {
-        if (month === 11) { setMonth(0); setYear((prev) => prev + 1); }
-        else { setMonth((prev) => prev + 1); }
-    };
-
-    const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-    const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
-    const firstDay = new Date(year, month, 1);
-    const firstDayOffset: number = (firstDay.getDay() + 6) % 7;
-    const totalDays: number = new Date(year, month + 1, 0).getDate();
-
-    const initials = user
-        ? `${(user.first_name || "").charAt(0)}${(user.last_name || "").charAt(0)}`.toUpperCase() || "?"
-        : "?";
-
-    const getEventDaysForMonth = (m: number, y: number): number[] => {
-        return events
-            .filter(e => {
-                if (!e.date && !e.start_date) return false;
-                const d = dayjs(e.date || e.start_date);
-                return d.month() === m && d.year() === y;
-            })
-            .map(e => dayjs(e.date || e.start_date).date());
-    };
-
-    const filteredEvents = events.filter(e => {
-        if (!e.date && !e.start_date) return false;
-        const d = dayjs(e.date || e.start_date);
-        return d.date() === selectedDay && d.month() === selectedMonth && d.year() === selectedYear;
-    });
 
     return (
-        <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1`}>
-            <HeaderMyDiary title="Mon Agenda" />
+        <View className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}>
+            <HeaderMyDiary title="Mon Agenda" filter={filter} onFilterChange={setFilter} />
 
-            <View className="p-5">
-                <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F3F3F3]"} p-4 rounded-lg mb-4`}>
-                    <View className="flex-row justify-between items-center mb-6">
-                        <TouchableOpacity onPress={goToPreviousMonth}>
-                            <MaterialIcons name="arrow-back-ios" size={25} color={isDarkMode ? "white" : "black"} />
-                        </TouchableOpacity>
-                        <Text className={`font-bold ${isDarkMode ? "text-white" : ""}`}>
-                            {`${monthNames[month]} ${year}`}
-                        </Text>
-                        <TouchableOpacity onPress={goToNextMonth}>
-                            <MaterialIcons name="arrow-forward-ios" size={25} color={isDarkMode ? "white" : "black"} />
-                        </TouchableOpacity>
-                    </View>
+            <ScrollView
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#065C98"
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Calendrier react-native-calendars */}
+                <Calendar
+                    markingType="multi-dot"
+                    markedDates={markedDates}
+                    onDayPress={(day) => setSelectedDay(day.dateString)}
+                    theme={{
+                        arrowColor: "#065C98",
+                        todayTextColor: "#065C98",
+                        selectedDayBackgroundColor: "#065C98",
+                        selectedDayTextColor: "white",
+                        dotColor: "#065C98",
+                        calendarBackground: isDarkMode ? "#000000" : "#ffffff",
+                        dayTextColor: isDarkMode ? "#ffffff" : "#000000",
+                        textDisabledColor: isDarkMode ? "#4B5563" : "#d9e1e8",
+                        monthTextColor: isDarkMode ? "#ffffff" : "#000000",
+                        textMonthFontWeight: "bold",
+                        textDayFontSize: 14,
+                        textMonthFontSize: 16,
+                    }}
+                />
 
-                    <View className="flex-row">
-                        {weekDays.map((day, index) => (
-                            <Text key={index} style={{ width: "14.28%" }} className={`text-center font-semibold ${isDarkMode ? "text-white" : ""}`}>
-                                {day}
+                {/* Filtre chips */}
+                <View className="flex-row gap-2 px-5 py-3">
+                    {(["all", "participations", "liked"] as DiaryFilter[]).map((f) => (
+                        <TouchableOpacity
+                            key={f}
+                            onPress={() => setFilter(f)}
+                            className={`px-4 py-2 rounded-full ${
+                                filter === f
+                                    ? "bg-[#065C98]"
+                                    : isDarkMode
+                                        ? "bg-[#1D1E20]"
+                                        : "bg-[#F2F5FA]"
+                            }`}
+                        >
+                            <Text
+                                className={`text-sm font-medium ${
+                                    filter === f
+                                        ? "text-white"
+                                        : isDarkMode
+                                            ? "text-gray-400"
+                                            : "text-gray-600"
+                                }`}
+                            >
+                                {f === "all" ? "Tout" : f === "participations" ? "Participations" : "Likées"}
                             </Text>
-                        ))}
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Titre du jour sélectionné */}
+                <View className="px-5 mb-3">
+                    <Text className={`text-base font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>
+                        {dayjs(selectedDay).format("dddd D MMMM YYYY")}
+                    </Text>
+                </View>
+
+                {/* Liste activités ou loading / empty state */}
+                {loading ? (
+                    <View className="items-center py-10">
+                        <ActivityIndicator size="large" color="#065C98" />
                     </View>
-
-                    <View className="flex flex-wrap flex-row">
-                        {Array.from({ length: firstDayOffset }).map((_, index) => (
-                            <View key={`empty-${index}`} style={{ width: "14.28%" }} />
-                        ))}
-
-                        {Array.from({ length: totalDays }).map((_, index) => {
-                            const dayNum = index + 1;
-                            const isSelected = dayNum === selectedDay && month === selectedMonth && year === selectedYear;
-                            const isToday = dayNum === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-                            const eventDays = getEventDaysForMonth(month, year);
-                            const hasEvent = eventDays.includes(dayNum);
+                ) : activitiesForDay.length === 0 ? (
+                    renderEmptyState()
+                ) : (
+                    <View className="px-5 pb-8">
+                        {activitiesForDay.map((activity) => {
+                            const host = activity.host;
+                            const hasAvatar = host && (host as any).avatar_url;
+                            const displayName = host?.pseudo || host?.first_name || "Hôte";
+                            const initial = displayName[0]?.toUpperCase() ?? "?";
+                            const timeStr = activity.date
+                                ? dayjs(activity.date).format("HH:mm")
+                                : "";
 
                             return (
-                                <TouchableOpacity key={dayNum} style={{ width: "14.28%" }} className="flex items-center justify-center"
-                                    onPress={() => { setSelectedDay(dayNum); setSelectedMonth(month); setSelectedYear(year); }}>
-                                    <View className={`w-10 h-10 items-center justify-center rounded-full ${isSelected ? isToday ? "bg-[#175ABC]" : "bg-[#CAD9F2]" : isToday ? "bg-[#175ABC]" : ""}`}>
-                                        <Text className={`text-lg font-bold text-center ${isSelected ? isToday ? "text-white" : "text-[#175ABC]" : isToday ? "text-white" : isDarkMode ? "text-white" : ""}`}>
-                                            {dayNum}
-                                        </Text>
+                                <TouchableOpacity
+                                    key={activity.id}
+                                    onPress={() =>
+                                        navigation.navigate("ActivityOverview", {
+                                            activityId: activity.id,
+                                        })
+                                    }
+                                    className={`rounded-xl p-4 mb-3 ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"}`}
+                                >
+                                    <View className="flex-row items-start">
+                                        {/* Heure */}
+                                        <View className="w-14 mr-3 items-center pt-1">
+                                            <Text className={`text-sm font-bold ${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"}`}>
+                                                {timeStr}
+                                            </Text>
+                                        </View>
+
+                                        {/* Infos activité */}
+                                        <View className="flex-1">
+                                            <Text
+                                                className={`text-base font-semibold mb-1 ${isDarkMode ? "text-white" : "text-black"}`}
+                                                numberOfLines={1}
+                                            >
+                                                {activity.title}
+                                            </Text>
+
+                                            {/* Lieu ou Visio */}
+                                            <View className="flex-row items-center mb-2">
+                                                <Ionicons
+                                                    name={activity.activity_type === "visio" ? "videocam-outline" : "location-outline"}
+                                                    size={13}
+                                                    color={isDarkMode ? "#9CA3AF" : "#6B7280"}
+                                                    style={{ marginRight: 4 }}
+                                                />
+                                                <Text
+                                                    className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
+                                                    numberOfLines={1}
+                                                >
+                                                    {activity.activity_type === "visio"
+                                                        ? "Visioconférence"
+                                                        : activity.city || activity.address || activity.location || "Lieu non précisé"}
+                                                </Text>
+                                            </View>
+
+                                            {/* Hôte */}
+                                            <View className="flex-row items-center">
+                                                {hasAvatar ? (
+                                                    <Image
+                                                        source={{ uri: (host as any).avatar_url }}
+                                                        style={{ width: 20, height: 20, borderRadius: 10, marginRight: 6 }}
+                                                    />
+                                                ) : (
+                                                    <View
+                                                        style={{
+                                                            width: 20,
+                                                            height: 20,
+                                                            borderRadius: 10,
+                                                            backgroundColor: "#065C98",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            marginRight: 6,
+                                                        }}
+                                                    >
+                                                        <Text style={{ color: "white", fontSize: 9, fontWeight: "bold" }}>
+                                                            {initial}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                                <Text className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                                    {displayName}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        {/* Miniature image activité */}
+                                        {activity.image_url ? (
+                                            <Image
+                                                source={{ uri: activity.image_url }}
+                                                style={{ width: 56, height: 56, borderRadius: 10, marginLeft: 10 }}
+                                            />
+                                        ) : null}
                                     </View>
-                                    {hasEvent && (
-                                        <View className={`w-5 h-1 rounded-full ${isSelected ? isToday ? "bg-white" : "bg-[#1A6EDE]" : isToday ? "bg-white" : "bg-[#1A6EDE]"} relative bottom-[0.6rem]`} />
-                                    )}
                                 </TouchableOpacity>
                             );
                         })}
                     </View>
-                </View>
-            </View>
-
-            {loading ? (
-                <ActivityIndicator size="large" className="mt-8" />
-            ) : (
-                <ScrollView className="mx-[-20px] px-5" contentContainerStyle={{ flexGrow: 1 }}>
-                    {filteredEvents.length === 0 ? (
-                        <View className="items-center mt-8">
-                            <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucune activité ce jour</Text>
-                        </View>
-                    ) : (
-                        filteredEvents.map((event) => (
-                            <EventCardReal
-                                key={event.id}
-                                id={event.id}
-                                title={event.title || "Activité"}
-                                date={dayjs(event.date || event.start_date).format("ddd DD MMM - HH:mm")}
-                                location={event.location || event.city || ""}
-                                category={event.category || ""}
-                                image={event.image_url ? { uri: event.image_url } : require("../../img/billard-exemple.jpg")}
-                                currentParticipants={event.current_participants || 0}
-                                totalParticipants={event.max_participants || 0}
-                                userInitials={initials}
-                                hostId={event.host_id}
-                                isLiked={event.is_liked || false}
-                                likesCount={event.likes_count || 0}
-                                onToggleLike={async () => {
-                                    try {
-                                        if (event.is_liked) {
-                                            await activityService.unlikeActivity(event.id);
-                                        } else {
-                                            await activityService.likeActivity(event.id);
-                                        }
-                                        fetchEvents();
-                                    } catch (e) { console.error(e); }
-                                }}
-                            />
-                        ))
-                    )}
-                </ScrollView>
-            )}
+                )}
+            </ScrollView>
         </View>
     );
 };

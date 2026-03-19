@@ -48,10 +48,10 @@ def can_message(sender_id, recipient_id):
 def get_conversations():
     """
     Get all conversations (list of people you've messaged with).
-    
+
     Returns most recent message for each conversation.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 30, type=int), 50)
     
@@ -144,7 +144,7 @@ def get_message_requests():
     """
     Get messages from people you're not friends with (message requests).
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     # Get friend IDs
     friendships = Friendship.query.filter(
@@ -195,18 +195,18 @@ def get_messages(partner_id):
     """
     Get conversation history with a specific user.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 50, type=int), 100)
-    
+
     partner = User.query.get(partner_id)
     if not partner:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     # Check if blocked
     can_msg, status = can_message(user_id, partner_id)
     if status == 'blocked':
-        return jsonify({'error': 'Cannot view messages'}), 403
+        return jsonify({'error': 'Impossible de consulter ces messages'}), 403
     
     # Get messages
     query = Message.query.filter(
@@ -260,20 +260,20 @@ def send_message(recipient_id):
     """
     Send a message to someone.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
-    
+
     if not data or not data.get('content', '').strip():
-        return jsonify({'error': 'Message content is required'}), 400
-    
+        return jsonify({'error': 'Le contenu du message est requis'}), 400
+
     recipient = User.query.get(recipient_id)
     if not recipient or not recipient.is_active:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     # Check if we can message
     can_msg, status = can_message(user_id, recipient_id)
     if not can_msg:
-        return jsonify({'error': 'Cannot send message to this user'}), 403
+        return jsonify({'error': 'Impossible d\'envoyer un message à cet utilisateur'}), 403
     
     content = data['content'].strip()
     
@@ -292,7 +292,7 @@ def send_message(recipient_id):
     # TODO: Send push notification
     
     return jsonify({
-        'message': 'Message sent',
+        'message': 'Message envoyé',
         'data': {
             'id': message.id,
             'content': message.content,
@@ -311,10 +311,10 @@ def send_message(recipient_id):
 def accept_message_request(sender_id):
     """
     Accept message requests from a user.
-    
+
     This moves their messages from requests to regular inbox.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     # Update all their messages to not be requests
     updated = Message.query.filter(
@@ -324,11 +324,11 @@ def accept_message_request(sender_id):
     ).update({'is_request': False})
     
     if updated == 0:
-        return jsonify({'error': 'No request from this user'}), 404
-    
+        return jsonify({'error': 'Aucune demande de cet utilisateur'}), 404
+
     db.session.commit()
-    
-    return jsonify({'message': 'Message request accepted'}), 200
+
+    return jsonify({'message': 'Demande de message acceptée'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -340,10 +340,10 @@ def accept_message_request(sender_id):
 def delete_message_request(sender_id):
     """
     Delete all message requests from a user.
-    
+
     Optionally block them too.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json() or {}
     
     should_block = data.get('block', False)
@@ -378,7 +378,7 @@ def delete_message_request(sender_id):
         
         db.session.commit()
     
-    return jsonify({'message': 'Request deleted'}), 200
+    return jsonify({'message': 'Demande supprimée'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -391,23 +391,23 @@ def delete_message(message_id):
     """
     Delete a message (soft delete for your side only).
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     message = Message.query.get(message_id)
     if not message:
-        return jsonify({'error': 'Message not found'}), 404
-    
+        return jsonify({'error': 'Message introuvable'}), 404
+
     # Can only delete your own messages (sent or received)
     if message.sender_id == user_id:
         message.deleted_by_sender = True
     elif message.recipient_id == user_id:
         message.deleted_by_recipient = True
     else:
-        return jsonify({'error': 'Not your message'}), 403
+        return jsonify({'error': "Ce message ne vous appartient pas"}), 403
     
     db.session.commit()
     
-    return jsonify({'message': 'Message deleted'}), 200
+    return jsonify({'message': 'Message supprimé'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -420,7 +420,7 @@ def mark_conversation_read(partner_id):
     """
     Mark all messages from a user as read.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     updated = Message.query.filter(
         Message.sender_id == partner_id,
@@ -431,7 +431,7 @@ def mark_conversation_read(partner_id):
     db.session.commit()
     
     return jsonify({
-        'message': 'Messages marked as read',
+        'message': 'Messages marqués comme lus',
         'count': updated
     }), 200
 
@@ -446,7 +446,7 @@ def get_unread_count():
     """
     Get total unread message count.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     count = Message.query.filter(
         Message.recipient_id == user_id,

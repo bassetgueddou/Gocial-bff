@@ -8,6 +8,20 @@ import { useNavigation } from "@react-navigation/native";
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
 
+const ProgressBar = ({ current, total }: { current: number; total: number }) => {
+    const { isDarkMode } = useTheme();
+    return (
+        <View className="flex-row justify-center items-center gap-2 py-3">
+            {Array.from({ length: total }, (_, i) => (
+                <View
+                    key={i}
+                    className={`h-2 rounded-full ${i < current ? 'w-8 bg-[#065C98]' : isDarkMode ? 'w-2 bg-gray-700' : 'w-2 bg-gray-300'}`}
+                />
+            ))}
+        </View>
+    );
+};
+
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
     CANumberParticipants: undefined;
@@ -95,6 +109,8 @@ const CAVisioRestriction: React.FC = () => {
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+
+            <ProgressBar current={3} total={5} />
 
             {/* ScrollView contenant tout le contenu */}
             <ScrollView className={`${isDarkMode ? "bg-black" : "bg-white"} min-h-screen`} contentContainerStyle={{ paddingBottom: 300 }}>
@@ -255,7 +271,7 @@ const CAVisioRestriction: React.FC = () => {
                     });
                     navigation.navigate("CANumberParticipants");
                 }} className={`px-8 py-3 ${isDarkMode ? 'bg-[#1A6EDE]' : 'bg-[#065C98]'} rounded-lg`}>
-                    <Text className="text-white font-bold">Modifier 3/5</Text>
+                    <Text className="text-white font-bold">Continuer 3/5</Text>
                 </TouchableOpacity>
             </View>
 

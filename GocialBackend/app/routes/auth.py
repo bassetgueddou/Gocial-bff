@@ -39,13 +39,13 @@ def validate_password(password):
     - Has uppercase and lowercase
     """
     if len(password) < 8:
-        return False, "Password must be at least 8 characters"
+        return False, "Le mot de passe doit contenir au moins 8 caractères"
     if not any(c.isdigit() for c in password):
-        return False, "Password must contain a number"
+        return False, "Le mot de passe doit contenir au moins un chiffre"
     if not any(c.isupper() for c in password):
-        return False, "Password must contain an uppercase letter"
+        return False, "Le mot de passe doit contenir au moins une majuscule"
     if not any(c.islower() for c in password):
-        return False, "Password must contain a lowercase letter"
+        return False, "Le mot de passe doit contenir au moins une minuscule"
     return True, None
 
 
@@ -64,22 +64,22 @@ def register():
     data = request.get_json()
     
     if not data:
-        return jsonify({'error': 'No data provided'}), 400
-    
+        return jsonify({'error': 'Aucune donnée fournie'}), 400
+
     # Check required fields
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
     user_type = data.get('user_type', 'person')
-    
+
     if not email or not password:
-        return jsonify({'error': 'Email and password are required'}), 400
-    
+        return jsonify({'error': "L'email et le mot de passe sont requis"}), 400
+
     if user_type not in ('person', 'pro', 'asso'):
-        return jsonify({'error': 'Invalid user type'}), 400
-    
+        return jsonify({'error': "Type d'utilisateur invalide"}), 400
+
     # Validate email format
     if not validate_email(email):
-        return jsonify({'error': 'Invalid email format'}), 400
+        return jsonify({'error': "Format d'email invalide"}), 400
     
     # Validate password strength
     is_valid, error_msg = validate_password(password)
@@ -88,15 +88,15 @@ def register():
     
     # Check if email already exists
     if User.query.filter_by(email=email).first():
-        return jsonify({'error': 'Email already registered'}), 409
-    
+        return jsonify({'error': 'Cet email est déjà utilisé'}), 409
+
     # Check pseudo uniqueness if provided
     pseudo = data.get('pseudo', '').strip()
     if pseudo:
         if len(pseudo) < 3:
-            return jsonify({'error': 'Pseudo must be at least 3 characters'}), 400
+            return jsonify({'error': 'Le pseudo doit contenir au moins 3 caractères'}), 400
         if User.query.filter_by(pseudo=pseudo).first():
-            return jsonify({'error': 'This pseudo is already taken'}), 409
+            return jsonify({'error': 'Ce pseudo est déjà pris'}), 409
     
     # Create user object
     user = User(
@@ -122,9 +122,9 @@ def register():
             # Quick age check - must be at least 13 (COPPA compliance-ish)
             age = (datetime.utcnow().date() - user.birth_date).days // 365
             if age < 13:
-                return jsonify({'error': 'You must be at least 13 years old'}), 400
+                return jsonify({'error': 'Vous devez avoir au moins 13 ans'}), 400
         except ValueError:
-            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+            return jsonify({'error': 'Format de date invalide (JJ/MM/AAAA attendu)'}), 400
     
     # Save to database
     try:
@@ -133,14 +133,14 @@ def register():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Registration failed: {e}')
-        return jsonify({'error': 'Registration failed. Please try again.'}), 500
+        return jsonify({'error': "L'inscription a échoué. Veuillez réessayer."}), 500
     
     # Generate tokens
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
     
     return jsonify({
-        'message': 'Account created successfully',
+        'message': 'Compte créé avec succès',
         'user': user.to_dict(include_private=True),
         'access_token': access_token,
         'refresh_token': refresh_token,
@@ -161,24 +161,24 @@ def login():
     data = request.get_json()
     
     if not data:
-        return jsonify({'error': 'No data provided'}), 400
-    
+        return jsonify({'error': 'Aucune donnée fournie'}), 400
+
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
-    
+
     if not email or not password:
-        return jsonify({'error': 'Email and password are required'}), 400
-    
+        return jsonify({'error': "L'email et le mot de passe sont requis"}), 400
+
     # Find user
     user = User.query.filter_by(email=email).first()
-    
+
     # Check password - use same error for both cases (security best practice)
     if not user or not user.check_password(password):
-        return jsonify({'error': 'Invalid email or password'}), 401
-    
+        return jsonify({'error': 'Email ou mot de passe incorrect'}), 401
+
     # Check if account is active
     if not user.is_active:
-        return jsonify({'error': 'Account is deactivated'}), 403
+        return jsonify({'error': 'Ce compte est désactivé'}), 403
     
     # Update last login timestamp
     user.last_login = datetime.utcnow()
@@ -190,7 +190,7 @@ def login():
     refresh_token = create_refresh_token(identity=str(user.id))
     
     return jsonify({
-        'message': 'Welcome back!',
+        'message': 'Bon retour !',
         'user': user.to_dict(include_private=True, include_settings=True),
         'access_token': access_token,
         'refresh_token': refresh_token,
@@ -214,7 +214,7 @@ def refresh_token():
     # Make sure user still exists and is active
     user = User.query.get(user_id)
     if not user or not user.is_active:
-        return jsonify({'error': 'Invalid session'}), 401
+        return jsonify({'error': 'Session invalide'}), 401
     
     # Update last seen
     user.last_seen = datetime.utcnow()
@@ -241,12 +241,12 @@ def get_me():
     user = User.query.get(user_id)
     
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     # Update last seen
     user.last_seen = datetime.utcnow()
     db.session.commit()
-    
+
     return jsonify({
         'user': user.to_dict(include_private=True, include_settings=True)
     }), 200
@@ -271,30 +271,30 @@ def change_password():
     new_password = data.get('new_password', '')
     
     if not old_password or not new_password:
-        return jsonify({'error': 'Both old and new password are required'}), 400
-    
+        return jsonify({'error': "L'ancien et le nouveau mot de passe sont requis"}), 400
+
     user = User.query.get(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     # Verify current password
     if not user.check_password(old_password):
-        return jsonify({'error': 'Current password is incorrect'}), 401
-    
+        return jsonify({'error': 'Le mot de passe actuel est incorrect'}), 401
+
     # Validate new password
     is_valid, error_msg = validate_password(new_password)
     if not is_valid:
         return jsonify({'error': error_msg}), 400
-    
+
     # Don't allow same password
     if old_password == new_password:
-        return jsonify({'error': 'New password must be different'}), 400
-    
+        return jsonify({'error': 'Le nouveau mot de passe doit être différent'}), 400
+
     # Update password
     user.set_password(new_password)
     db.session.commit()
-    
-    return jsonify({'message': 'Password updated successfully'}), 200
+
+    return jsonify({'message': 'Mot de passe mis à jour'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -319,7 +319,7 @@ def logout():
     
     # TODO: Add token to blacklist when we implement that
     
-    return jsonify({'message': 'Logged out successfully'}), 200
+    return jsonify({'message': 'Déconnecté avec succès'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -337,7 +337,7 @@ def check_email():
     email = data.get('email', '').strip().lower()
     
     if not email:
-        return jsonify({'error': 'Email is required'}), 400
+        return jsonify({'error': "L'email est requis"}), 400
     
     if not validate_email(email):
         return jsonify({'available': False, 'reason': 'invalid_format'}), 200
@@ -363,7 +363,7 @@ def check_pseudo():
     pseudo = data.get('pseudo', '').strip()
     
     if not pseudo:
-        return jsonify({'error': 'Pseudo is required'}), 400
+        return jsonify({'error': 'Le pseudo est requis'}), 400
     
     if len(pseudo) < 3:
         return jsonify({'available': False, 'reason': 'too_short'}), 200

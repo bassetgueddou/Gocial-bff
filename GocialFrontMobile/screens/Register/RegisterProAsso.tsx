@@ -1,10 +1,23 @@
 ﻿import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import Toast from "react-native-toast-message";
 import { useAuth } from "../../src/contexts/AuthContext";
+import type { InlineErrors } from "../../src/types";
+
+const getPasswordStrength = (pwd: string): number => {
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[a-z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  return score;
+};
+const strengthColors = ['#EF4444', '#F97316', '#EAB308', '#22C55E'];
+const strengthLabels = ['Très faible', 'Faible', 'Moyen', 'Fort'];
 
 type RootStackParamList = {
   Login: undefined;
@@ -17,7 +30,7 @@ const RegisterProAsso: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { register } = useAuth();
   const [selectedType, setSelectedType] = useState<"pro" | "asso">("pro");
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Common fields
   const [companyName, setCompanyName] = useState("");
@@ -35,21 +48,89 @@ const RegisterProAsso: React.FC = () => {
   const [title, setTitle] = useState("");
   const [rna, setRna] = useState("");
 
+  const [errors, setErrors] = useState<InlineErrors>({});
+
+  const passwordStrength = getPasswordStrength(password);
+
+  const clearError = (field: string) => setErrors(prev => ({ ...prev, [field]: '' }));
+
+  const validateEmailField = (val: string) => {
+    setErrors(prev => {
+      const u = { ...prev };
+      if (!val.trim()) { u.email = "L'email est obligatoire"; }
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { u.email = "Format d'email invalide"; }
+      else { delete u.email; }
+      return u;
+    });
+  };
+
+  const validatePasswordField = (val: string) => {
+    setErrors(prev => {
+      const u = { ...prev };
+      if (!val) { u.password = 'Le mot de passe est obligatoire'; }
+      else if (val.length < 8) { u.password = '8 caractères minimum'; }
+      else if (!/[A-Z]/.test(val)) { u.password = '1 majuscule requise'; }
+      else if (!/[a-z]/.test(val)) { u.password = '1 minuscule requise'; }
+      else if (!/[0-9]/.test(val)) { u.password = '1 chiffre requis'; }
+      else { delete u.password; }
+      return u;
+    });
+  };
+
+  const validatePseudoField = (val: string) => {
+    setErrors(prev => {
+      const u = { ...prev };
+      if (val.length > 0 && val.length < 3) { u.pseudo = '3 caractères minimum'; } else { delete u.pseudo; }
+      return u;
+    });
+  };
+
+  const parseBackendError = (message: string): Partial<InlineErrors> => {
+    const lower = message.toLowerCase();
+    if (lower.includes('email')) return { email: message };
+    if (lower.includes('mot de passe') || lower.includes('password')) return { password: message };
+    if (lower.includes('pseudo')) return { pseudo: message };
+    if (lower.includes('siren')) return { siren: message };
+    if (lower.includes('rna')) return { rna: message };
+    return {};
+  };
+
   const handleRegister = async () => {
-    const requiredFields = selectedType === "pro"
-      ? [denomination, siren, companyName, address, sector, email, password, pseudo]
-      : [title, rna, companyName, address, sector, email, password, pseudo];
+    // Inline validation
+    const validationErrors: InlineErrors = {};
+    if (selectedType === "pro") {
+      if (!denomination.trim()) validationErrors.denomination = 'La dénomination est obligatoire.';
+      if (!siren.trim()) validationErrors.siren = 'Le SIREN est obligatoire.';
+    } else {
+      if (!title.trim()) validationErrors.title = 'Le titre est obligatoire.';
+      if (!rna.trim()) validationErrors.rna = 'Le numéro RNA est obligatoire.';
+    }
+    if (!companyName.trim()) validationErrors.company_name = 'Le nom visible est obligatoire.';
+    if (!address.trim()) validationErrors.address = "L'adresse est obligatoire.";
+    if (!sector.trim()) validationErrors.sector = "Le secteur d'activité est obligatoire.";
+    if (!pseudo.trim()) {
+      validationErrors.pseudo = 'Le pseudo est obligatoire.';
+    } else if (pseudo.length < 3) {
+      validationErrors.pseudo = '3 caractères minimum';
+    }
+    if (!email.trim()) {
+      validationErrors.email = "L'email est obligatoire.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      validationErrors.email = "Format d'email invalide";
+    }
+    if (!password) {
+      validationErrors.password = 'Le mot de passe est obligatoire.';
+    } else if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      validationErrors.password = 'Mot de passe trop faible (8 car., 1 maj., 1 min., 1 chiffre)';
+    }
 
-    if (requiredFields.some(f => !f.trim())) {
-      Alert.alert("Erreur", "Veuillez remplir tous les champs obligatoires.");
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Veuillez corriger les champs indiqués.', position: 'top', topOffset: 60 });
       return;
     }
-    if (password.length < 8) {
-      Alert.alert("Erreur", "Le mot de passe doit contenir au moins 8 caractères.");
-      return;
-    }
 
-    setLoading(true);
+    setIsSubmitting(true);
     try {
       await register({
         email: email.trim().toLowerCase(),
@@ -65,14 +146,19 @@ const RegisterProAsso: React.FC = () => {
         ),
       });
       // Auth context handles navigation automatically
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
+      const msg =
+        apiErr?.response?.data?.error ||
+        apiErr?.response?.data?.message ||
         "Erreur lors de l'inscription.";
-      Alert.alert("Inscription échouée", message);
+      const fieldErrors = parseBackendError(msg);
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(prev => ({ ...prev, ...fieldErrors }) as InlineErrors);
+      }
+      Toast.show({ type: 'error', text1: msg, position: 'top', topOffset: 60 });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -114,54 +200,106 @@ const RegisterProAsso: React.FC = () => {
             <>
               <View className="mt-6">
                 <Text className="text-base font-medium">Dénomination <Text className="text-red-500">*</Text></Text>
-                <TextInput value={denomination} onChangeText={setDenomination} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                <TextInput value={denomination} onChangeText={t => { setDenomination(t); clearError('denomination'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                {errors.denomination ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.denomination}</Text> : null}
               </View>
               <View className="mt-6">
                 <Text className="text-base font-medium">Siren <Text className="text-red-500">*</Text></Text>
-                <TextInput value={siren} onChangeText={setSiren} keyboardType="numeric" className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                <TextInput value={siren} onChangeText={t => { setSiren(t); clearError('siren'); }} keyboardType="numeric" className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                {errors.siren ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.siren}</Text> : null}
               </View>
             </>
           ) : (
             <>
               <View className="mt-6">
                 <Text className="text-base font-medium">Titre <Text className="text-red-500">*</Text></Text>
-                <TextInput value={title} onChangeText={setTitle} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                <TextInput value={title} onChangeText={t => { setTitle(t); clearError('title'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                {errors.title ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.title}</Text> : null}
               </View>
               <View className="mt-6">
                 <Text className="text-base font-medium">Numéro RNA <Text className="text-red-500">*</Text></Text>
-                <TextInput value={rna} onChangeText={setRna} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                <TextInput value={rna} onChangeText={t => { setRna(t); clearError('rna'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+                {errors.rna ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.rna}</Text> : null}
               </View>
             </>
           )}
 
           <View className="mt-6">
             <Text className="text-base font-medium">Nom visible <Text className="text-red-500">*</Text></Text>
-            <TextInput value={companyName} onChangeText={setCompanyName} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+            <TextInput value={companyName} onChangeText={t => { setCompanyName(t); clearError('company_name'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+            {errors.company_name ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.company_name}</Text> : null}
           </View>
 
           <View className="mt-6">
             <Text className="text-base font-medium">Adresse <Text className="text-red-500">*</Text></Text>
-            <TextInput value={address} onChangeText={setAddress} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+            <TextInput value={address} onChangeText={t => { setAddress(t); clearError('address'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+            {errors.address ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.address}</Text> : null}
           </View>
 
           <View className="mt-6">
             <Text className="text-base font-medium">Secteur d'activité <Text className="text-red-500">*</Text></Text>
-            <TextInput value={sector} onChangeText={setSector} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+            <TextInput value={sector} onChangeText={t => { setSector(t); clearError('sector'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+            {errors.sector ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.sector}</Text> : null}
           </View>
 
           <View className="mt-6">
             <Text className="text-base font-medium">Pseudo <Text className="text-red-500">*</Text></Text>
-            <TextInput value={pseudo} onChangeText={setPseudo} autoCapitalize="none" placeholder="(exemple : mon_entreprise)" className="border border-gray-300 rounded-md px-4 py-3 mt-2" />
+            <TextInput
+              value={pseudo}
+              onChangeText={t => { setPseudo(t); clearError('pseudo'); }}
+              onBlur={() => validatePseudoField(pseudo)}
+              autoCapitalize="none"
+              placeholder="(exemple : mon_entreprise)"
+              className={`border rounded-md px-4 py-3 mt-2 ${errors.pseudo ? 'border-red-500' : 'border-gray-300'}`}
+            />
+            {errors.pseudo ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.pseudo}</Text> : null}
           </View>
 
           <View className="mt-6">
             <Text className="text-base font-medium">Email <Text className="text-red-500">*</Text></Text>
-            <TextInput value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} placeholder="contact@entreprise.com" className="border border-gray-300 rounded-md px-4 py-3 mt-2" />
+            <TextInput
+              value={email}
+              onChangeText={t => { setEmail(t); clearError('email'); }}
+              onBlur={() => validateEmailField(email)}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="contact@entreprise.com"
+              className={`border rounded-md px-4 py-3 mt-2 ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+            />
+            {errors.email ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.email}</Text> : null}
           </View>
 
           <View className="mt-6">
             <Text className="text-base font-medium">Mot de passe <Text className="text-red-500">*</Text></Text>
-            <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="Minimum 8 caractères" className="border border-gray-300 rounded-md px-4 py-3 mt-2" />
+            <TextInput
+              value={password}
+              onChangeText={t => { setPassword(t); clearError('password'); }}
+              onBlur={() => validatePasswordField(password)}
+              secureTextEntry
+              placeholder="Minimum 8 caractères"
+              className={`border rounded-md px-4 py-3 mt-2 ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+            />
+            {errors.password ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.password}</Text> : null}
+            {/* Indicateur de force du mot de passe */}
+            {password.length > 0 && (
+              <View className="mt-2">
+                <View className="flex-row gap-1 mt-1">
+                  {[0, 1, 2, 3].map((i) => (
+                    <View
+                      key={i}
+                      className="flex-1 h-1 rounded-full"
+                      style={{ backgroundColor: i < passwordStrength ? strengthColors[passwordStrength - 1] : '#E5E7EB' }}
+                    />
+                  ))}
+                </View>
+                {passwordStrength > 0 && (
+                  <Text className="text-xs mt-1" style={{ color: strengthColors[passwordStrength - 1] }}>
+                    {strengthLabels[passwordStrength - 1]}
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         </View>
 
@@ -171,12 +309,15 @@ const RegisterProAsso: React.FC = () => {
             <Text className="text-[#2C5B90] text-center font-medium">Abandonner</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className="flex-1 py-3 bg-[#2C5B90] rounded-md ml-2"
-            disabled={loading}
-            style={{ opacity: loading ? 0.7 : 1 }}
+            className={`flex-1 py-3 bg-[#2C5B90] rounded-md ml-2 ${isSubmitting ? 'opacity-50' : ''}`}
+            disabled={isSubmitting}
             onPress={handleRegister}
           >
-            {loading ? <ActivityIndicator color="white" /> : <Text className="text-white text-center font-medium">Valider</Text>}
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text className="text-white text-center font-medium">Créer mon compte</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

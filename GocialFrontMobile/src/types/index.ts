@@ -242,3 +242,21 @@ export interface CreateActivityData {
   longitude?: number;
   visio_link?: string;
 }
+
+export interface ActivitiesResponse {
+  activities: Activity[];
+  total: number;
+  pages: number;
+  current_page: number;
+  has_next?: boolean;
+}
+
+export interface CalendarDayEvents {
+  participations: Activity[];
+  liked: Activity[];
+  hosted: Activity[];
+}
+
+export type DiaryFilter = 'all' | 'participations' | 'liked';
+
+export type InlineErrors = Record<string, string>;

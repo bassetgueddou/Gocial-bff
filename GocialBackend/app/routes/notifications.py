@@ -24,12 +24,12 @@ notifications_bp = Blueprint('notifications', __name__)
 def get_notifications():
     """
     Get all notifications for the current user.
-    
+
     Query params:
     - unread_only: only show unread notifications
     - page, per_page: pagination
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     unread_only = request.args.get('unread_only', 'false').lower() == 'true'
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 30, type=int), 100)
@@ -65,17 +65,17 @@ def mark_as_read(notif_id):
     """
     Mark a single notification as read.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     notif = Notification.query.filter_by(id=notif_id, user_id=user_id).first()
     if not notif:
-        return jsonify({'error': 'Notification not found'}), 404
-    
+        return jsonify({'error': 'Notification introuvable'}), 404
+
     notif.is_read = True
     notif.read_at = datetime.utcnow()
     db.session.commit()
-    
-    return jsonify({'message': 'Marked as read'}), 200
+
+    return jsonify({'message': 'Notification lue'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -88,7 +88,7 @@ def mark_all_as_read():
     """
     Mark all notifications as read.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     updated = Notification.query.filter_by(
         user_id=user_id,
@@ -101,7 +101,7 @@ def mark_all_as_read():
     db.session.commit()
     
     return jsonify({
-        'message': 'All marked as read',
+        'message': 'Toutes les notifications lues',
         'count': updated
     }), 200
 
@@ -116,16 +116,16 @@ def delete_notification(notif_id):
     """
     Delete a notification.
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     notif = Notification.query.filter_by(id=notif_id, user_id=user_id).first()
     if not notif:
-        return jsonify({'error': 'Notification not found'}), 404
-    
+        return jsonify({'error': 'Notification introuvable'}), 404
+
     db.session.delete(notif)
     db.session.commit()
-    
-    return jsonify({'message': 'Notification deleted'}), 200
+
+    return jsonify({'message': 'Notification supprimée'}), 200
 
 
 # ---------------------------------------------------------------------
@@ -138,13 +138,13 @@ def clear_all_notifications():
     """
     Delete all notifications.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     deleted = Notification.query.filter_by(user_id=user_id).delete()
     db.session.commit()
     
     return jsonify({
-        'message': 'All notifications cleared',
+        'message': 'Toutes les notifications supprimées',
         'count': deleted
     }), 200
 
@@ -158,10 +158,10 @@ def clear_all_notifications():
 def get_unread_count():
     """
     Get the number of unread notifications.
-    
+
     Useful for badges and indicators.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     
     count = Notification.query.filter_by(
         user_id=user_id,
@@ -243,17 +243,17 @@ def update_fcm_token():
     """
     Update the user's FCM token for push notifications.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json()
-    
+
     if not data or not data.get('token'):
-        return jsonify({'error': 'Token is required'}), 400
-    
+        return jsonify({'error': 'Le token est requis'}), 400
+
     user = User.query.get(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
     user.fcm_token = data['token']
     db.session.commit()
-    
-    return jsonify({'message': 'Token updated'}), 200
+
+    return jsonify({'message': 'Token mis à jour'}), 200

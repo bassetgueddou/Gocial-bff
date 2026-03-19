@@ -95,7 +95,7 @@ const CAVisioPreview: React.FC = () => {
                         <MaterialIcons name="arrow-back-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
                     <Text className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>
-                        Apercu
+                        Aperçu
                     </Text>
                     <TouchableOpacity onPress={() => navigation.navigate("Main")}>
                         <MaterialIcons name="close" size={25} color="red" />

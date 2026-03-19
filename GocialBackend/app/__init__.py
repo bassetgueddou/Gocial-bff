@@ -82,15 +82,15 @@ def _init_extensions(app):
     # JWT error handlers for better DX
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
-        return jsonify({'error': 'Token expired', 'code': 'token_expired'}), 401
-    
+        return jsonify({'error': 'Session expirée, veuillez vous reconnecter', 'code': 'token_expired'}), 401
+
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
-        return jsonify({'error': 'Invalid token', 'code': 'invalid_token'}), 401
-    
+        return jsonify({'error': 'Token invalide', 'code': 'invalid_token'}), 401
+
     @jwt.unauthorized_loader
     def missing_token_callback(error):
-        return jsonify({'error': 'Authorization required', 'code': 'auth_required'}), 401
+        return jsonify({'error': 'Authentification requise', 'code': 'auth_required'}), 401
 
 
 def _register_blueprints(app):
@@ -124,17 +124,17 @@ def _register_error_handlers(app):
     
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({'error': 'Resource not found'}), 404
-    
+        return jsonify({'error': 'Ressource introuvable'}), 404
+
     @app.errorhandler(500)
     def server_error(e):
         # Log this somewhere in prod (Sentry, CloudWatch, etc.)
         app.logger.error(f'Internal error: {e}')
-        return jsonify({'error': 'Something went wrong on our end'}), 500
-    
+        return jsonify({'error': 'Erreur serveur interne'}), 500
+
     @app.errorhandler(405)
     def method_not_allowed(e):
-        return jsonify({'error': 'Method not allowed'}), 405
+        return jsonify({'error': 'Méthode non autorisée'}), 405
 
 
 def _register_commands(app):
