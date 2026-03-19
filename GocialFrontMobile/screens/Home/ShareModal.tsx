@@ -91,9 +91,15 @@ const ShareModal: React.FC<ShareModalProps> = ({ visible, onClose }) => {
 
 
     return (
-        <Modal visible={visible} animationType="slide" transparent>
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
             <GestureDetector gesture={panGesture}>
                 <View className="flex-1 justify-end bg-black/50">
+                    {/* Backdrop pressable pour fermer */}
+                    <TouchableOpacity
+                        className="absolute inset-0"
+                        activeOpacity={1}
+                        onPress={onClose}
+                    />
                     <View className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
 
                         {showCopiedToast && (
@@ -102,9 +108,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ visible, onClose }) => {
                             </View>
                         )}
 
-                        {/* Barre pour glisser vers le bas */}
-                        <View className="items-center mb-3">
-                            <View className="w-10 h-1 bg-gray-400 rounded-full" />
+                        {/* Barre pour glisser vers le bas + bouton fermer */}
+                        <View className="flex-row items-center justify-between mb-3">
+                            <View className="flex-1 items-center">
+                                <View className="w-10 h-1 bg-gray-400 rounded-full" />
+                            </View>
+                            <TouchableOpacity onPress={onClose} className="p-1">
+                                <MaterialIcons name="close" size={22} color={isDarkMode ? "white" : "black"} />
+                            </TouchableOpacity>
                         </View>
 
                         {!isFriendView ? (

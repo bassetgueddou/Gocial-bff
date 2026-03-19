@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { parsePhoneNumberFromString, AsYouType } from "libphonenumber-js/mobile";
 import { useNavigation } from "@react-navigation/native";
+import PhoneInput from "../../src/components/PhoneInput";
 import { StackNavigationProp } from "@react-navigation/stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -35,7 +35,6 @@ const RegisterPerson: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const { register } = useAuth();
     const [selectedGender, setSelectedGender] = useState<"female" | "male" | "non-binary" | null>("female");
-    const [selectedCountryCode] = useState<string>("FR"); // ISO2 (FR, BE, etc.)
     const [phoneNumber, setPhoneNumber] = useState<string>("");
     const [formattedNumber, setFormattedNumber] = useState<string>("");
     const [phoneError, setPhoneError] = useState<string>("");
@@ -122,30 +121,6 @@ const RegisterPerson: React.FC = () => {
         return {};
     };
 
-    const onPhoneChange = (text: string) => {
-        // Format “as you type” selon le pays (confort utilisateur)
-        const formatter = new AsYouType(selectedCountryCode as any);
-        const pretty = formatter.input(text);
-
-        setPhoneNumber(pretty);
-
-        // Validation + format international
-        const parsed = parsePhoneNumberFromString(pretty, selectedCountryCode as any);
-
-        if (!pretty.trim()) {
-            setFormattedNumber("");
-            setPhoneError("");
-            return;
-        }
-
-        if (parsed && parsed.isValid()) {
-            setFormattedNumber(parsed.formatInternational());
-            setPhoneError("");
-        } else {
-            setFormattedNumber("");
-            setPhoneError("Numéro invalide");
-        }
-    };
 
 
     return (
@@ -281,28 +256,16 @@ const RegisterPerson: React.FC = () => {
 
                 {/* Téléphone avec sélection de pays */}
                 <View className="mt-6">
-                    <Text className="text-base font-medium">Téléphone</Text>
-                    
-                    <View className="border border-[#2C5B90] rounded-md flex-row items-center p-3 mt-2">
-                        <Text className="mr-2 text-base font-medium">🇫🇷 +33</Text>
-                        <TextInput
-                            value={phoneNumber}
-                            onChangeText={onPhoneChange}
-                            placeholder="06 12 34 56 78"
-                            keyboardType="phone-pad"
-                            className="flex-1"
-                        />
-                    </View>
-
-                    {!!phoneError && (
-                        <Text className="text-red-500 mt-2">{phoneError}</Text>
-                    )}
-
-                    {!!formattedNumber && !phoneError && (
-                        <Text className="text-sm mt-2 text-gray-600">
-                            Format : {formattedNumber}
-                        </Text>
-                    )}
+                    <Text className="text-base font-medium mb-2">Téléphone</Text>
+                    <PhoneInput
+                        value={phoneNumber}
+                        onChangeText={(local, full) => {
+                            setPhoneNumber(local);
+                            setFormattedNumber(full);
+                            setPhoneError('');
+                        }}
+                        error={errors.phone || phoneError}
+                    />
                 </View>
 
                 {/* Pseudo */}
