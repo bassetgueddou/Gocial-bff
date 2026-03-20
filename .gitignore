@@ -36,3 +36,8 @@ node_modules/
 *.aab
 *.ipa
 *.jsbundle
+
+CLAUDE.md
+DB_SCHEMA.md
+PROMPT_AGENT_TEAMS.md
+.claude/

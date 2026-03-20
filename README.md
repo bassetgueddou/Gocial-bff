@@ -1,6 +1,8 @@
 # Gocial
 
-## What's inside
+Réseau social mobile autour des activités (sport, sorties, culture, visio).
+
+## Structure
 
 ```
 gocial/
@@ -11,8 +13,7 @@ gocial/
 │   │   └── utils/          # auth helpers, email
 │   ├── migrations/         # Alembic
 │   ├── tests/
-│   ├── Dockerfile
-│   └── docker-compose.yml
+│   └── Dockerfile
 │
 ├── GocialFrontMobile/      # Mobile app — React Native, TypeScript
 │   ├── src/
@@ -21,101 +22,204 @@ gocial/
 │   │   ├── hooks/          # useActivities, useFriends…
 │   │   └── types/          # TS interfaces
 │   ├── screens/            # all the UI
-│   ├── navigation/
-│   └── Dockerfile          # for CI only
+│   └── navigation/
 │
-├── docker-compose.yml      # runs everything (API + Postgres + Redis)
+├── docker-compose.yml      # runs everything (API + Postgres + Redis + Adminer)
 └── .gitignore
 ```
 
 ## Tech
 
-- **Backend**: Python 3.11 · Flask 3 · SQLAlchemy 2 · JWT · Alembic
-- **Frontend**: React Native 0.78 · React 19 · TypeScript · NativeWind · React Navigation 7
-- **DB**: SQLite locally, Postgres in Docker/prod
-- **Infra**: Docker, Redis, Gunicorn
+- **Backend** : Python 3.11 · Flask 3 · SQLAlchemy 2 · JWT · Alembic
+- **Frontend** : React Native 0.78 · React 19 · TypeScript · NativeWind · React Navigation 7
+- **DB** : SQLite localement, PostgreSQL en Docker/prod
+- **Infra** : Docker, Redis, Gunicorn
 
-## Get it running
+---
 
-### Backend (no Docker)
+## Démarrage rapide (Docker — recommandé)
+
+### 1. Lancer les services
+
+```bash
+docker-compose up --build -d
+```
+
+Ça démarre :
+| Service | Port | Description |
+|---------|------|-------------|
+| API Flask | `:5000` | Backend REST |
+| PostgreSQL | `:5432` | Base de données |
+| Redis | `:6379` | Cache & rate limiting |
+| Adminer | `:8080` | Interface BDD (dev) |
+
+### 2. Créer les tables (migration)
+
+```bash
+docker-compose exec api flask db upgrade
+```
+
+> **Important** : Cette commande est **obligatoire** après chaque `docker-compose down -v` (qui supprime les volumes et donc la BDD), ou après un premier lancement.
+
+### 3. Remplir avec des données de test (optionnel)
+
+```bash
+docker-compose exec api flask seed
+```
+
+### 4. Vérifier que l'API tourne
+
+```bash
+curl http://localhost:5000/api/health
+```
+
+Ou ouvrir `http://localhost:5000/api/health` dans le navigateur.
+
+### 5. Lancer le frontend mobile
+
+```bash
+cd GocialFrontMobile
+yarn install
+npx react-native run-android    # Android
+npx react-native run-ios        # iOS
+```
+
+> L'émulateur Android ne peut pas accéder à `localhost` directement — l'app utilise `10.0.2.2:5000` automatiquement. Pour un appareil physique, modifier l'IP dans `src/config.ts`.
+
+---
+
+## Démarrage sans Docker
+
+### Backend
 
 ```bash
 cd GocialBackend
 python -m venv venv
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # Mac/Linux
+venv\Scripts\activate            # Windows
+source venv/bin/activate         # Mac/Linux
 pip install -r requirements.txt
-flask db upgrade
-flask run
+flask db upgrade                 # Créer les tables
+flask seed                       # Données de test (optionnel)
+flask run                        # Serveur sur :5000
 ```
-
-API on `http://localhost:5000`. Hit `/api/health` to check.
-
-### Backend (Docker)
-
-```bash
-docker-compose up --build
-```
-
-That spins up the API (`:5000`), Postgres (`:5432`), Redis (`:6379`), and Adminer (`:8080`).
 
 ### Frontend
 
 ```bash
 cd GocialFrontMobile
-npm install
-
-# iOS
-cd ios && pod install && cd ..
-npx react-native run-ios
-
-# Android
+yarn install
 npx react-native run-android
 ```
 
-Android emulators can't reach `localhost` directly so the app auto-uses `10.0.2.2:5000`. For a physical device, update the IP in `src/config.ts`.
+---
+
+## Commandes utiles
+
+### Backend (dans le container Docker)
+
+```bash
+docker-compose exec api flask db upgrade          # Appliquer les migrations
+docker-compose exec api flask db migrate -m "msg" # Créer une nouvelle migration
+docker-compose exec api flask seed                 # Remplir la BDD de données de test
+docker-compose exec api flask reset-db             # Supprimer et recréer les tables
+docker-compose exec api flask test                 # Lancer les tests
+docker-compose exec api flask lint                 # Format (black + flake8)
+docker-compose exec api flask create-admin         # Créer un admin
+```
+
+### Backend (sans Docker, avec le venv Windows)
+
+```bash
+cd GocialBackend
+../.venv/Scripts/python.exe -m flask db upgrade
+../.venv/Scripts/python.exe -m flask seed
+../.venv/Scripts/python.exe -m flask run
+../.venv/Scripts/python.exe -m flask test
+```
+
+### Frontend
+
+```bash
+cd GocialFrontMobile
+npx tsc --noEmit                 # Vérification TypeScript (doit être 0 erreurs)
+yarn web                         # Version web (Vite)
+npx react-native run-android     # Lancer sur Android
+npx react-native run-ios         # Lancer sur iOS
+```
+
+### Docker
+
+```bash
+docker-compose up -d             # Démarrer en arrière-plan
+docker-compose up --build -d     # Rebuild après changement backend
+docker-compose down              # Arrêter les services
+docker-compose down -v           # Arrêter + SUPPRIMER les volumes (BDD vidée !)
+docker-compose logs -f api       # Voir les logs de l'API en temps réel
+```
+
+> **Attention** : `docker-compose down -v` supprime les volumes PostgreSQL. Il faudra refaire `flask db upgrade` + `flask seed` après.
+
+---
+
+## Workflow après un reset complet
+
+Si tu as fait `docker-compose down -v` ou si tu repars de zéro :
+
+```bash
+# 1. Lancer les services
+docker-compose up --build -d
+
+# 2. Attendre que Postgres soit prêt (~5s)
+docker-compose logs db | tail -5
+
+# 3. Créer les tables
+docker-compose exec api flask db upgrade
+
+# 4. (Optionnel) Remplir de données de test
+docker-compose exec api flask seed
+
+# 5. Lancer le frontend
+cd GocialFrontMobile && npx react-native run-android
+```
+
+---
 
 ## API overview
 
-All routes under `/api`. Auth via `Authorization: Bearer <token>`.
+Toutes les routes sous `/api`. Auth via `Authorization: Bearer <token>`.
 
-| Area | Prefix | Key routes |
-|------|--------|-----------|
+| Domaine | Préfixe | Routes principales |
+|---------|---------|-------------------|
 | Auth | `/auth` | register, login, refresh, me, change-password |
-| Users | `/users` | get profile, update, avatar upload, search |
+| Users | `/users` | profil, update, avatar, search |
 | Activities | `/activities` | CRUD, like, participate, top 3 |
 | Friends | `/friends` | request, accept, reject, block, list |
 | Messages | `/messages` | conversations, send, read, unread count |
 | Notifications | `/notifications` | list, mark read, delete |
 
-## CLI
+## Flux d'auth
 
-```bash
-flask test           # tests + coverage
-flask lint           # black + isort + flake8
-flask seed           # fill DB with sample data
-flask reset-db       # nuke and rebuild tables
-flask create-admin   # interactive admin creation
-```
+1. L'utilisateur s'inscrit ou se connecte → reçoit `access_token` + `refresh_token`
+2. Chaque requête API envoie `Bearer <access_token>`
+3. Quand le token expire, l'intercepteur axios appelle `/auth/refresh` automatiquement
+4. Si le refresh échoue → déconnexion
 
-## Auth flow
+Géré dans `src/services/api.ts`, pas de gestion manuelle des tokens dans les écrans.
 
-1. User registers or logs in → gets `access_token` + `refresh_token`
-2. Every API request sends `Bearer <access_token>`
-3. When access token expires, the axios interceptor auto-calls `/auth/refresh` with the refresh token
-4. If refresh fails → user gets logged out
+## Adminer (interface BDD)
 
-All handled in `src/services/api.ts`, no manual token management needed in screens.
+Accessible sur `http://localhost:8080` quand Docker tourne.
 
-## Git
+| Champ | Valeur |
+|-------|--------|
+| Système | PostgreSQL |
+| Serveur | `db` |
+| Utilisateur | `gocial` |
+| Mot de passe | `gocial` |
+| Base de données | `gocial` |
 
-Single repo, one `git clone` gets you everything. The `.gitignore` covers Python stuff (`.venv/`, `__pycache__/`, `.db`), Node (`node_modules/`), build artifacts, IDE files, env files.
-
-## Deploy
-
-**Backend**: Procfile included for Heroku/Railway/Render, or just `docker-compose up -d`, or raw `gunicorn`.
-
-**Frontend**: `./gradlew assembleRelease` for Android APK, Xcode Archive for iOS.
+emulator:
+"$LOCALAPPDATA/Android/Sdk/emulator/emulator" -avd Pixel_6a &
 
 ## License
 
