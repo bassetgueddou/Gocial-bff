@@ -373,9 +373,21 @@ const RegisterPerson: React.FC = () => {
                             } else if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
                                 validationErrors.password = 'Mot de passe trop faible (8 car., 1 maj., 1 min., 1 chiffre)';
                             }
+                            if (!birthDate) {
+                                validationErrors.birth_date = 'La date de naissance est obligatoire.';
+                            }
                             if (Object.keys(validationErrors).length > 0) {
                                 setErrors(validationErrors);
-                                Toast.show({ type: 'error', text1: 'Erreur', text2: 'Veuillez corriger les champs indiqués.', position: 'top', topOffset: 60 });
+                                const nbChamps = Object.keys(validationErrors).length;
+                                Toast.show({
+                                    type: 'error',
+                                    text1: 'Champs obligatoires manquants',
+                                    text2: nbChamps === 1
+                                        ? 'Veuillez remplir le champ indiqué en rouge.'
+                                        : `Veuillez remplir les ${nbChamps} champs indiqués en rouge.`,
+                                    position: 'top',
+                                    topOffset: 60,
+                                });
                                 return;
                             }
                             setIsSubmitting(true);
