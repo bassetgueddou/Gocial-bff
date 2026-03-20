@@ -83,4 +83,9 @@ export const userService = {
     });
     return response.data;
   },
+
+  getUserRating: async (userId: number): Promise<{ avg_rating: number; total_evaluations: number }> => {
+    const response = await api.get(`/api/users/${userId}/rating`);
+    return response.data;
+  },
 };

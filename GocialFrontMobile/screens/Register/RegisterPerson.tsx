@@ -8,6 +8,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Toast from "react-native-toast-message";
 import { useAuth } from "../../src/contexts/AuthContext";
+import { authService } from "../../src/services/auth";
 import type { InlineErrors } from "../../src/types";
 
 const getPasswordStrength = (pwd: string): number => {
@@ -391,6 +392,45 @@ const RegisterPerson: React.FC = () => {
                                 });
                                 return;
                             }
+
+                            // Vérifier disponibilité email + pseudo côté serveur
+                            setIsSubmitting(true);
+                            try {
+                                const [emailCheck, pseudoCheck] = await Promise.all([
+                                    authService.checkEmail(email.trim().toLowerCase()),
+                                    authService.checkPseudo(pseudo.trim()),
+                                ]);
+                                const serverErrors: InlineErrors = {};
+                                if (!emailCheck.available) {
+                                    serverErrors.email = emailCheck.reason || 'Cet email est déjà utilisé';
+                                }
+                                if (!pseudoCheck.available) {
+                                    serverErrors.pseudo = pseudoCheck.reason || 'Ce pseudo est déjà pris';
+                                }
+                                if (Object.keys(serverErrors).length > 0) {
+                                    setErrors(serverErrors);
+                                    Toast.show({
+                                        type: 'error',
+                                        text1: 'Inscription impossible',
+                                        text2: Object.values(serverErrors).join('. '),
+                                        position: 'top',
+                                        topOffset: 60,
+                                    });
+                                    return;
+                                }
+                            } catch {
+                                Toast.show({
+                                    type: 'error',
+                                    text1: 'Erreur de connexion',
+                                    text2: 'Impossible de vérifier la disponibilité. Réessaie.',
+                                    position: 'top',
+                                    topOffset: 60,
+                                });
+                                return;
+                            } finally {
+                                setIsSubmitting(false);
+                            }
+
                             navigation.navigate("AddProfilePhotoPerson", {
                                 registerData: {
                                     email: email.trim().toLowerCase(),

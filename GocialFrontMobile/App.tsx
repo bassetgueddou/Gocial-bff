@@ -1,5 +1,7 @@
 import React from "react";
 import { View, Text, ActivityIndicator } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { NavigationContainer } from "@react-navigation/native";
 import { ThemeProvider } from "./screens/ThemeContext";
@@ -22,25 +24,25 @@ const AppContent = () => {
     return <SplashScreen />;
   }
 
-  return (
-    <>
-      <NavigationContainer>
-        <AppNavigator />
-      </NavigationContainer>
-      <Toast />
-    </>
-  );
+  return <AppNavigator />;
 };
 
 const App = () => {
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <NavigationContainer>
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            </NavigationContainer>
+            <Toast />
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 

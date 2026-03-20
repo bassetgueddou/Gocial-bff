@@ -13,6 +13,7 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import { friendService } from "../../src/services/friends";
+import { reportService } from "../../src/services/reports";
 import Toast from "react-native-toast-message";
 
 const { width, height } = Dimensions.get("window");
@@ -71,13 +72,29 @@ const MoreProfilModal: React.FC<MoreProfilModalProps> = ({ visible, onClose, use
         }
     };
 
-    const handleReport = () => {
-        Toast.show({
-            type: "success",
-            text1: "Signalement envoyé",
-            position: "top",
-            topOffset: 60,
-        });
+    const handleReport = async () => {
+        if (!userId) return;
+        try {
+            await reportService.createReport({
+                report_type: 'user',
+                reported_user_id: userId,
+                reason: 'inappropriate_profile',
+            });
+            Toast.show({
+                type: "success",
+                text1: "Signalement envoyé",
+                position: "top",
+                topOffset: 60,
+            });
+        } catch {
+            Toast.show({
+                type: "error",
+                text1: "Erreur",
+                text2: "Impossible d'envoyer le signalement",
+                position: "top",
+                topOffset: 60,
+            });
+        }
         onClose();
     };
 

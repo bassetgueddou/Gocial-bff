@@ -354,3 +354,24 @@ export interface ActivityFilterState {
   freeOnly: boolean;
   hostType: 'all' | 'person' | 'pro' | 'asso';
 }
+
+// Report
+export interface Report {
+    id: number;
+    reporter_id: number;
+    report_type: 'user' | 'activity' | 'message';
+    reported_user_id: number | null;
+    reported_activity_id: number | null;
+    reason: string;
+    description: string | null;
+    status: string;
+    created_at: string;
+}
+
+export interface CreateReportData {
+    report_type: 'user' | 'activity' | 'message';
+    reported_user_id?: number;
+    reported_activity_id?: number;
+    reason: string;
+    description?: string;
+}
