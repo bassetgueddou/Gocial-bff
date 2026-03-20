@@ -130,7 +130,7 @@ const MyFriends: React.FC = () => {
                     <Text className={`text-lg ${activeTab === "proasso" ? "text-white" : isDarkMode ? "text-white" : "text-black"}`}>Pro/Asso</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setActiveTab("blocked")} className={`flex-1 py-2 items-center ${activeTab === "blocked" ? "bg-[#065C98]" : isDarkMode ? "bg-[#1D1E20]" : ""}`}>
-                    <Text className={`text-lg ${activeTab === "blocked" ? "text-white" : isDarkMode ? "text-white" : "text-black"}`}>Bloque</Text>
+                    <Text className={`text-lg ${activeTab === "blocked" ? "text-white" : isDarkMode ? "text-white" : "text-black"}`}>Bloqués</Text>
                 </TouchableOpacity>
             </View>
 

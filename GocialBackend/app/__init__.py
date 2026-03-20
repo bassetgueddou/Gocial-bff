@@ -160,7 +160,7 @@ def _register_shell_context(app):
     
     Just run 'flask shell' and you can query the DB directly.
     """
-    from app.models import User, Role, Activity, Participation, Friendship, Message, Notification
+    from app.models import User, Role, Activity, Participation, Friendship, Message, Notification, Evaluation
     
     @app.shell_context_processor
     def make_shell_context():
@@ -173,4 +173,5 @@ def _register_shell_context(app):
             'Friendship': Friendship,
             'Message': Message,
             'Notification': Notification,
+            'Evaluation': Evaluation,
         }

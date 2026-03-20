@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef, useEffect } from "react";
-import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator } from "react-native";
+import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator, Linking } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
@@ -123,7 +123,7 @@ const ProfilPersonOverview: React.FC = () => {
         { label: "École", value: user.school || "/" },
         { label: "Alcool", value: user.alcohol || "/" },
         { label: "Tabac", value: user.tobacco || "/" },
-        { label: "Alimentation", value: user.diet || "/" },
+        { label: "Alimentation", value: user.food_preference || "/" },
     ];
 
     return (
@@ -222,10 +222,34 @@ const ProfilPersonOverview: React.FC = () => {
                                 <Text className={`${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"} font-medium`}>Mes amis</Text>
                             </TouchableOpacity>
                             <View className="flex-row items-center space-x-3">
-                                <Image source={require("../../img/instagram-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8 mr-2" />
-                                <Image source={require("../../img/tiktok-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
-                                <Image source={require("../../img/facebook-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-7 w-7 mr-1" />
-                                <Image source={require("../../img/snapchat-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
+                                {user.instagram ? (
+                                    <TouchableOpacity onPress={() => Linking.openURL(`https://instagram.com/${user.instagram}`)}>
+                                        <Image source={require("../../img/instagram-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8 mr-2" />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <Image source={require("../../img/instagram-social.png")} style={{ tintColor: "gray" }} className="h-8 w-8 mr-2" />
+                                )}
+                                {user.tiktok ? (
+                                    <TouchableOpacity onPress={() => Linking.openURL(`https://tiktok.com/@${user.tiktok}`)}>
+                                        <Image source={require("../../img/tiktok-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <Image source={require("../../img/tiktok-social.png")} style={{ tintColor: "gray" }} className="h-8 w-8" />
+                                )}
+                                {user.facebook ? (
+                                    <TouchableOpacity onPress={() => Linking.openURL(`https://facebook.com/${user.facebook}`)}>
+                                        <Image source={require("../../img/facebook-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-7 w-7 mr-1" />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <Image source={require("../../img/facebook-social.png")} style={{ tintColor: "gray" }} className="h-7 w-7 mr-1" />
+                                )}
+                                {user.snapchat ? (
+                                    <TouchableOpacity onPress={() => Linking.openURL(`https://snapchat.com/add/${user.snapchat}`)}>
+                                        <Image source={require("../../img/snapchat-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <Image source={require("../../img/snapchat-social.png")} style={{ tintColor: "gray" }} className="h-8 w-8" />
+                                )}
                             </View>
                         </View>
                     </View>

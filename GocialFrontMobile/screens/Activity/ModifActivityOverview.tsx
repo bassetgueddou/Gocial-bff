@@ -87,30 +87,14 @@ const ModifActivityOverview: React.FC = () => {
         }
     };
 
-    const handleSave = async () => {
-        if (!activityId || saving) return;
-        setSaving(true);
-        try {
-            await activityService.updateActivity(activityId, {});
-            Toast.show({
-                type: 'success',
-                text1: 'Activité enregistrée',
-                text2: 'Les modifications ont été sauvegardées',
-                position: 'top',
-                topOffset: 60,
-            });
-            navigation.goBack();
-        } catch {
-            Toast.show({
-                type: 'error',
-                text1: 'Erreur',
-                text2: 'Impossible d\'enregistrer les modifications',
-                position: 'top',
-                topOffset: 60,
-            });
-        } finally {
-            setSaving(false);
-        }
+    const handleSave = () => {
+        Toast.show({
+            type: 'success',
+            text1: 'Modifications terminées',
+            position: 'top',
+            topOffset: 60,
+        });
+        navigation.goBack();
     };
 
     const handleCancel = async () => {

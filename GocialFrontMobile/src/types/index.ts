@@ -26,6 +26,9 @@ export interface User {
   facebook: string | null;
   tiktok: string | null;
   snapchat: string | null;
+  twitter: string | null;
+  linkedin: string | null;
+  youtube: string | null;
   // Learn more fields
   languages: string | null;
   profession: string | null;

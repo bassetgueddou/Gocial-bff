@@ -14,7 +14,7 @@ import uuid
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.models import User, Activity, Participation, ActivityLike, Friendship
+from app.models import User, Activity, Participation, ActivityLike, Friendship, Evaluation
 
 activities_bp = Blueprint('activities', __name__)
 
@@ -941,3 +941,139 @@ def get_my_participations():
         'pages': pagination.pages,
         'current_page': page,
     }), 200
+
+
+# ---------------------------------------------------------------------
+# Submit evaluations for an activity
+# ---------------------------------------------------------------------
+
+@activities_bp.route('/<int:activity_id>/evaluate', methods=['POST'])
+@jwt_required()
+def evaluate_activity(activity_id):
+    """
+    Submit evaluations for participants after an activity is completed.
+
+    Body: { "evaluations": [{ "user_id": 5, "rating": 4, "was_present": true, "comment": "Super !" }] }
+    """
+    current_user_id = int(get_jwt_identity())
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'Aucune donnée fournie'}), 400
+
+    activity = Activity.query.get(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activité introuvable'}), 404
+
+    # Vérifier que l'activité est terminée (status completed ou date passée)
+    is_completed = activity.status == 'completed' or (activity.date and activity.date < datetime.utcnow())
+    if not is_completed:
+        return jsonify({'error': "L'activité n'est pas encore terminée"}), 400
+
+    # Vérifier que l'utilisateur est l'hôte ou un participant validé
+    is_host = activity.host_id == current_user_id
+    is_participant = False
+    if not is_host:
+        participation = Participation.query.filter_by(
+            activity_id=activity_id,
+            user_id=current_user_id,
+            status='validated'
+        ).first()
+        is_participant = participation is not None
+
+    if not is_host and not is_participant:
+        return jsonify({'error': "Vous devez être l'hôte ou un participant validé pour évaluer"}), 403
+
+    evaluations_data = data.get('evaluations', [])
+    if not evaluations_data:
+        return jsonify({'error': 'Aucune évaluation fournie'}), 400
+
+    # Récupérer les IDs des participants validés + l'hôte (les personnes évaluables)
+    validated_participations = Participation.query.filter_by(
+        activity_id=activity_id,
+        status='validated'
+    ).all()
+    valid_user_ids = {p.user_id for p in validated_participations}
+    valid_user_ids.add(activity.host_id)
+
+    created_evaluations = []
+
+    for eval_data in evaluations_data:
+        evaluated_id = eval_data.get('user_id')
+        rating = eval_data.get('rating')
+        was_present = eval_data.get('was_present', True)
+        comment = eval_data.get('comment', '').strip() if eval_data.get('comment') else None
+
+        # Validations
+        if not evaluated_id:
+            return jsonify({'error': "L'identifiant de l'utilisateur évalué est requis"}), 400
+
+        if evaluated_id == current_user_id:
+            return jsonify({'error': 'Vous ne pouvez pas vous évaluer vous-même'}), 400
+
+        if evaluated_id not in valid_user_ids:
+            return jsonify({'error': f"L'utilisateur {evaluated_id} ne participe pas à cette activité"}), 400
+
+        if rating is None or not isinstance(rating, int) or rating < 1 or rating > 5:
+            return jsonify({'error': 'La note doit être un entier entre 1 et 5'}), 400
+
+        # Vérifier qu'on n'a pas déjà évalué cette personne pour cette activité
+        existing = Evaluation.query.filter_by(
+            activity_id=activity_id,
+            evaluator_id=current_user_id,
+            evaluated_id=evaluated_id
+        ).first()
+
+        if existing:
+            return jsonify({'error': f"Vous avez déjà évalué l'utilisateur {evaluated_id} pour cette activité"}), 409
+
+        evaluation = Evaluation(
+            activity_id=activity_id,
+            evaluator_id=current_user_id,
+            evaluated_id=evaluated_id,
+            rating=rating,
+            was_present=was_present,
+            comment=comment
+        )
+        db.session.add(evaluation)
+        created_evaluations.append(evaluation)
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Évaluation échouée: {e}')
+        return jsonify({'error': "Erreur lors de l'enregistrement des évaluations"}), 500
+
+    return jsonify({
+        'message': 'Évaluations enregistrées',
+        'evaluations': [ev.to_dict() for ev in created_evaluations]
+    }), 201
+
+
+# ---------------------------------------------------------------------
+# Get evaluations for an activity
+# ---------------------------------------------------------------------
+
+@activities_bp.route('/<int:activity_id>/evaluations', methods=['GET'])
+@jwt_required()
+def get_activity_evaluations(activity_id):
+    """
+    Get all evaluations for an activity.
+    """
+    int(get_jwt_identity())  # Auth check
+
+    activity = Activity.query.get(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activité introuvable'}), 404
+
+    evaluations = Evaluation.query.filter_by(activity_id=activity_id).order_by(
+        Evaluation.created_at.desc()
+    ).all()
+
+    return jsonify({
+        'evaluations': [ev.to_dict() for ev in evaluations],
+        'total': len(evaluations)
+    }), 200
+
+

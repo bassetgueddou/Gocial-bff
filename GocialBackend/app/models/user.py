@@ -96,7 +96,10 @@ class User(db.Model):
     facebook = db.Column(db.String(100))
     tiktok = db.Column(db.String(100))
     snapchat = db.Column(db.String(100))
-    
+    twitter = db.Column(db.String(100))
+    linkedin = db.Column(db.String(100))
+    youtube = db.Column(db.String(100))
+
     # === Learn more / profile details ===
     languages = db.Column(db.String(200))
     profession = db.Column(db.String(100))
@@ -252,7 +255,10 @@ class User(db.Model):
         data['facebook'] = self.facebook
         data['tiktok'] = self.tiktok
         data['snapchat'] = self.snapchat
-        
+        data['twitter'] = self.twitter
+        data['linkedin'] = self.linkedin
+        data['youtube'] = self.youtube
+
         # Private fields - only visible to the user themselves
         if include_private:
             data.update({

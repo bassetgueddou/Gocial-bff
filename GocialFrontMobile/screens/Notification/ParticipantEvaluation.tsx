@@ -4,12 +4,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
     ActivityOverview: undefined;
-
+    ParticipantEvaluation: { activityId?: number };
 };
 
 // Typage de la navigation
@@ -49,6 +50,8 @@ const eventData: EventData = {
 const ParticipantEvaluation: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
+    const route = useRoute<RouteProp<RootStackParamList, "ParticipantEvaluation">>();
+    const activityId = route.params?.activityId;
 
     const [presence, setPresence] = useState<{ [key: number]: string }>({});
     const [ratings, setRatings] = useState<{ [key: number]: number }>({});
@@ -80,6 +83,11 @@ const ParticipantEvaluation: React.FC = () => {
 
             {/* ScrollView contenant tout le contenu */}
             <ScrollView className={`p-0 ${isDarkMode ? "bg-black" : "bg-white"}`} contentContainerStyle={{ paddingBottom: 20 }}>
+
+                {/* Texte explicatif */}
+                <Text className={`text-center px-6 py-3 text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    Évaluez l'organisateur de cette activité
+                </Text>
 
                 {/* Carte de l'événement */}
                 <TouchableOpacity onPress={() => navigation.navigate("ActivityOverview")} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-white"} rounded-2xl shadow-lg p-4 mx-4`}
@@ -152,10 +160,10 @@ const ParticipantEvaluation: React.FC = () => {
             </ScrollView>
 
             <View className={`${isDarkMode ? "bg-black" : "bg-white"} px-4 pb-6 flex-row justify-between`}>
-                <TouchableOpacity className={`px-8 py-3 border border-[#FF4D4D] rounded-lg`}>
+                <TouchableOpacity onPress={() => navigation.goBack()} className={`px-8 py-3 border border-[#FF4D4D] rounded-lg`}>
                     <Text className="text-[#FF4D4D] font-bold">Annuler</Text>
                 </TouchableOpacity>
-                <TouchableOpacity className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg`}>
+                <TouchableOpacity onPress={() => Toast.show({ type: "info", text1: "Fonctionnalité bientôt disponible", position: "top", topOffset: 60 })} className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg`}>
                     <Text className="text-white font-bold">Publier</Text>
                 </TouchableOpacity>
             </View>

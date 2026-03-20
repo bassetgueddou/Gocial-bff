@@ -22,7 +22,11 @@ type RootStackParamList = {
     NotificationsPerson: undefined;
     NotificationsProAsso: undefined;
     ProfilPerson: undefined;
+    ProfilPro: undefined;
+    ProfilAsso: undefined;
     ProfilPersonPreview: undefined;
+    ProfilProPreview: undefined;
+    ProfilAssoPreview: undefined;
     Login: undefined;
     MyInformations: undefined;
     Main: undefined;
@@ -109,11 +113,11 @@ const GeneralParameter: React.FC = () => {
                 <View className="w-full px-4 mt-4 mb-5">
                     <View className="flex-row items-center">
                         {user?.avatar_url ? (
-                            <TouchableOpacity onPress={() => navigation.navigate("ProfilPersonPreview")}>
+                            <TouchableOpacity onPress={() => navigation.navigate(user?.user_type === 'pro' ? 'ProfilProPreview' : user?.user_type === 'asso' ? 'ProfilAssoPreview' : 'ProfilPersonPreview')}>
                                 <Image source={{ uri: user.avatar_url }} className="w-12 h-12 rounded-full" />
                             </TouchableOpacity>
                         ) : (
-                            <TouchableOpacity onPress={() => navigation.navigate("ProfilPersonPreview")} className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center relative bottom-1">
+                            <TouchableOpacity onPress={() => navigation.navigate(user?.user_type === 'pro' ? 'ProfilProPreview' : user?.user_type === 'asso' ? 'ProfilAssoPreview' : 'ProfilPersonPreview')} className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center relative bottom-1">
                                 <Text className="text-white font-bold text-lg">{getInitials()}</Text>
                             </TouchableOpacity>
                         )}
@@ -123,7 +127,7 @@ const GeneralParameter: React.FC = () => {
                                 {user?.is_verified && <Image source={require("../../img/check.png")} className="w-6 h-6 ml-1" />}
                             </View>
                             <View className="flex-row gap-2 mt-1">
-                                <TouchableOpacity onPress={() => navigation.navigate("ProfilPerson")} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-200"} px-4 py-2 rounded-md`}>
+                                <TouchableOpacity onPress={() => navigation.navigate(user?.user_type === 'pro' ? 'ProfilPro' : user?.user_type === 'asso' ? 'ProfilAsso' : 'ProfilPerson')} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-200"} px-4 py-2 rounded-md`}>
                                     <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Profil</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => navigation.navigate("MyInformations")} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-200"} px-4 py-2 rounded-md`}>
@@ -168,7 +172,7 @@ const GeneralParameter: React.FC = () => {
                             }
                         }} disabled={togglingDarkMode} thumbColor="white" trackColor={{ false: "#E5E7EB", true: "black" }} ios_backgroundColor="#E5E7EB" style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }], position: "relative", left: 5 }} />
                     </View>
-                    <TouchableOpacity onPress={() => navigation.navigate("AccountPrivacyPerson")} className="flex-row justify-between items-center py-3">
+                    <TouchableOpacity onPress={() => navigation.navigate(user?.user_type === 'person' ? 'AccountPrivacyPerson' : 'AccountPrivacyProAsso')} className="flex-row justify-between items-center py-3">
                         <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Confidentialité du compte</Text>
                         <MaterialIcons name="arrow-forward-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>

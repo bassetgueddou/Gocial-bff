@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef, useEffect } from "react";
-import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator, Alert } from "react-native";
+import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator, Alert, Linking } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
@@ -21,6 +21,7 @@ const ProfilProAdd: React.FC = () => {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [friendStatus, setFriendStatus] = useState<string>("none");
+    const [friendshipId, setFriendshipId] = useState<number | null>(null);
     const [addLoading, setAddLoading] = useState(false);
     const [modalExternalMessageVisible, setModalExternalMessageVisible] = useState(false);
     const [modalMoreProfilVisible, setModalMoreProfilVisible] = useState(false);
@@ -37,6 +38,7 @@ const ProfilProAdd: React.FC = () => {
                 ]);
                 setProfile(userRes.user);
                 setFriendStatus(statusRes.status || "none");
+                setFriendshipId(statusRes.friendship_id);
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
         })();
@@ -50,8 +52,8 @@ const ProfilProAdd: React.FC = () => {
                 await friendService.sendRequest(userId);
                 setFriendStatus("pending_sent");
                 Alert.alert("Succès", "Demande d'ami envoyée !");
-            } else if (friendStatus === "pending_received") {
-                await friendService.acceptRequest(userId);
+            } else if (friendStatus === "pending_received" && friendshipId) {
+                await friendService.acceptRequest(friendshipId);
                 setFriendStatus("friends");
                 Alert.alert("Succès", "Demande acceptée !");
             }
@@ -146,10 +148,18 @@ const ProfilProAdd: React.FC = () => {
                                 <Text className={`${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"} font-medium`}>Amis</Text>
                             </TouchableOpacity>
                             <View className="flex-row items-center space-x-3">
-                                <Image source={require("../../img/instagram-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8 mr-2" />
-                                <Image source={require("../../img/tiktok-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
-                                <Image source={require("../../img/facebook-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-7 w-7 mr-1" />
-                                <Image source={require("../../img/snapchat-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
+                                <TouchableOpacity onPress={() => profile.instagram && Linking.openURL(`https://instagram.com/${profile.instagram}`)} disabled={!profile.instagram}>
+                                    <Image source={require("../../img/instagram-social.png")} style={{ tintColor: profile.instagram ? (isDarkMode ? "white" : "black") : "gray" }} className="h-8 w-8 mr-2" />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => profile.tiktok && Linking.openURL(`https://tiktok.com/@${profile.tiktok}`)} disabled={!profile.tiktok}>
+                                    <Image source={require("../../img/tiktok-social.png")} style={{ tintColor: profile.tiktok ? (isDarkMode ? "white" : "black") : "gray" }} className="h-8 w-8" />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => profile.facebook && Linking.openURL(`https://facebook.com/${profile.facebook}`)} disabled={!profile.facebook}>
+                                    <Image source={require("../../img/facebook-social.png")} style={{ tintColor: profile.facebook ? (isDarkMode ? "white" : "black") : "gray" }} className="h-7 w-7 mr-1" />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => profile.snapchat && Linking.openURL(`https://snapchat.com/add/${profile.snapchat}`)} disabled={!profile.snapchat}>
+                                    <Image source={require("../../img/snapchat-social.png")} style={{ tintColor: profile.snapchat ? (isDarkMode ? "white" : "black") : "gray" }} className="h-8 w-8" />
+                                </TouchableOpacity>
                             </View>
                         </View>
                     </View>
