@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import PhoneInput from "../../src/components/PhoneInput";
 import { StackNavigationProp } from "@react-navigation/stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import Toast from "react-native-toast-message";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { authService } from "../../src/services/auth";
@@ -51,32 +50,71 @@ const RegisterPerson: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<InlineErrors>({});
 
-    // DatePicker
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const maxDate = new Date();
-    maxDate.setFullYear(maxDate.getFullYear() - 13);
-    const minDate = new Date('1920-01-01');
+    // Date de naissance — TextInput avec auto-formatage JJ/MM/AAAA
+    const [birthDateDisplay, setBirthDateDisplay] = useState('');
 
-    const handleDateChange = (_: unknown, date?: Date) => {
-        setShowDatePicker(Platform.OS === 'ios');
-        if (date) {
-            setSelectedDate(date);
-            const iso = date.toISOString().split('T')[0];
-            setBirthDate(iso);
-            const ageMs = new Date().getTime() - date.getTime();
-            const ageYears = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 365.25));
-            setErrors(prev => {
-                const u = { ...prev };
-                if (ageYears < 13) { u.birth_date = 'Vous devez avoir au moins 13 ans'; } else { delete u.birth_date; }
-                return u;
-            });
+    const handleBirthDateChange = (text: string) => {
+        // Ne garder que les chiffres
+        const digits = text.replace(/\D/g, '').slice(0, 8);
+
+        // Auto-insertion des /
+        let formatted = '';
+        for (let i = 0; i < digits.length; i++) {
+            if (i === 2 || i === 4) formatted += '/';
+            formatted += digits[i];
         }
-    };
+        setBirthDateDisplay(formatted);
 
-    const formatDisplayDate = (date: Date | null): string => {
-        if (!date) return '';
-        return date.toLocaleDateString('fr-FR');
+        // Reset si incomplet
+        if (digits.length < 8) {
+            setBirthDate('');
+            setErrors(prev => { const u = { ...prev }; delete u.birth_date; return u; });
+            return;
+        }
+
+        // Parse et validation
+        const day = parseInt(digits.slice(0, 2), 10);
+        const month = parseInt(digits.slice(2, 4), 10);
+        const year = parseInt(digits.slice(4, 8), 10);
+
+        if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1920) {
+            setErrors(prev => ({ ...prev, birth_date: 'Date invalide' }));
+            setBirthDate('');
+            return;
+        }
+
+        // Vérifier que la date existe réellement (ex: pas 31/02)
+        const date = new Date(year, month - 1, day);
+        if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
+            setErrors(prev => ({ ...prev, birth_date: 'Date invalide' }));
+            setBirthDate('');
+            return;
+        }
+
+        // Vérifier pas dans le futur
+        if (date > new Date()) {
+            setErrors(prev => ({ ...prev, birth_date: 'Date invalide' }));
+            setBirthDate('');
+            return;
+        }
+
+        // Vérifier âge minimum 13 ans
+        const today = new Date();
+        let age = today.getFullYear() - year;
+        if (today.getMonth() < month - 1 || (today.getMonth() === month - 1 && today.getDate() < day)) {
+            age--;
+        }
+
+        if (age < 13) {
+            setErrors(prev => ({ ...prev, birth_date: 'Tu dois avoir au moins 13 ans' }));
+            setBirthDate('');
+            return;
+        }
+
+        // Tout OK — stocker en ISO pour le backend
+        const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        setBirthDate(iso);
+        setErrors(prev => { const u = { ...prev }; delete u.birth_date; return u; });
     };
 
     const validateEmail = (val: string) => {
@@ -181,34 +219,26 @@ const RegisterPerson: React.FC = () => {
                     </Text>
                 </TouchableOpacity>
 
-                {/* Date de naissance — DatePicker */}
+                {/* Date de naissance — TextInput auto-formaté */}
                 <View className="mt-6">
                     <Text className="text-base font-medium">
                         Né(e) le <Text className="text-red-700">*</Text>
                     </Text>
-                    <TouchableOpacity
-                        onPress={() => setShowDatePicker(true)}
-                        className={`flex-row items-center rounded-md px-4 py-3 mt-2 border ${errors.birth_date ? 'border-red-500' : 'border-gray-300'}`}
-                    >
+                    <View className={`flex-row items-center rounded-md px-4 mt-2 border ${errors.birth_date ? 'border-red-500' : 'border-gray-300'}`}>
                         <MaterialIcons name="event" size={20} color="#6B7280" />
-                        <Text className={`ml-2 ${selectedDate ? 'text-black' : 'text-gray-400'}`}>
-                            {selectedDate ? formatDisplayDate(selectedDate) : 'JJ/MM/AAAA'}
-                        </Text>
-                    </TouchableOpacity>
+                        <TextInput
+                            value={birthDateDisplay}
+                            onChangeText={handleBirthDateChange}
+                            placeholder="JJ/MM/AAAA"
+                            keyboardType="numeric"
+                            maxLength={10}
+                            className="flex-1 ml-2 py-3"
+                        />
+                    </View>
                     {errors.birth_date ? (
                         <Text className="text-red-700 text-xs mt-1 ml-1">{errors.birth_date}</Text>
                     ) : (
                         <Text className="text-sm mt-1">Tu dois avoir au moins 13 ans</Text>
-                    )}
-                    {showDatePicker && (
-                        <DateTimePicker
-                            value={selectedDate || maxDate}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={handleDateChange}
-                            maximumDate={maxDate}
-                            minimumDate={minDate}
-                        />
                     )}
                 </View>
 
