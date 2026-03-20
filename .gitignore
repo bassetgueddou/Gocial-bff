@@ -6,6 +6,10 @@ Desktop.ini
 # ============ IDE ============
 .vscode/
 .idea/
+CLAUDE.md
+.claude/
+PROMPT_AGENT_TEAMS.md
+AGENT_STATUS.md
 *.swp
 *.swo
 
@@ -37,3 +41,10 @@ node_modules/
 *.ipa
 *.jsbundle
 BACKLOG.md
+
+# ============ Docs  ============
+
+DB_SCHEMA.md
+API_SPECS.md
+QA_REPORT.md
+
