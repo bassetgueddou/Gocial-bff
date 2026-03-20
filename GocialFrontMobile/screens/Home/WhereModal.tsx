@@ -7,6 +7,7 @@ import {
     Dimensions,
     TextInput,
     Image,
+    ActivityIndicator,
 } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -14,6 +15,9 @@ import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import { useFilters } from "../../src/contexts/FilterContext";
 import Slider from "@react-native-community/slider";
+import Geolocation from "@react-native-community/geolocation";
+import Toast from "react-native-toast-message";
+import type { NominatimResult } from "../../src/types";
 
 const { width, height } = Dimensions.get("window");
 
@@ -28,6 +32,74 @@ const WhereModal: React.FC<WhereModalProps> = ({ visible, onClose }) => {
     const [selectedMode, setSelectedMode] = useState<"nearby" | "city">("nearby");
     const [radius, setRadius] = useState<number>(10);
     const [city, setCity] = useState<string>("");
+    const [locating, setLocating] = useState(false);
+
+    const geocodeCity = async (cityName: string): Promise<{ lat: number; lon: number } | null> => {
+        try {
+            const params = new URLSearchParams({
+                q: cityName,
+                format: 'json',
+                addressdetails: '1',
+                limit: '1',
+                countrycodes: 'fr',
+            });
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+                { headers: { 'User-Agent': 'Gocial-App/1.0', Accept: 'application/json' } },
+            );
+            const data: NominatimResult[] = await response.json();
+            if (data.length > 0) {
+                return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    };
+
+    const handleSearch = async () => {
+        setLocating(true);
+        try {
+            if (selectedMode === 'nearby') {
+                Geolocation.getCurrentPosition(
+                    (position) => {
+                        setLocation(position.coords.latitude, position.coords.longitude, radius);
+                        setLocating(false);
+                        onClose();
+                    },
+                    (error) => {
+                        setLocating(false);
+                        let msg = 'Impossible de récupérer votre position.';
+                        if (error.code === 1) {
+                            msg = 'Permission de localisation refusée.';
+                        } else if (error.code === 3) {
+                            msg = 'Délai de localisation dépassé.';
+                        }
+                        Toast.show({ type: 'error', text1: msg, position: 'top', topOffset: 60 });
+                    },
+                    { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
+                );
+            } else {
+                // City mode — geocode via Nominatim
+                if (!city.trim()) {
+                    setLocating(false);
+                    Toast.show({ type: 'error', text1: 'Veuillez entrer un nom de ville.', position: 'top', topOffset: 60 });
+                    return;
+                }
+                const coords = await geocodeCity(city.trim());
+                setLocating(false);
+                if (coords) {
+                    setLocation(coords.lat, coords.lon, radius);
+                    onClose();
+                } else {
+                    Toast.show({ type: 'error', text1: 'Ville introuvable.', position: 'top', topOffset: 60 });
+                }
+            }
+        } catch {
+            setLocating(false);
+            Toast.show({ type: 'error', text1: 'Une erreur est survenue.', position: 'top', topOffset: 60 });
+        }
+    };
 
     const panGesture = Gesture.Pan()
         .onUpdate((event) => {
@@ -120,14 +192,19 @@ const WhereModal: React.FC<WhereModalProps> = ({ visible, onClose }) => {
                                 <Text className={`text-base ${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"}`}>Réinitialiser</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => {
-                                // For "nearby" mode we pass radius only (lat/lng would come from device geolocation)
-                                // For "city" mode the search would need geocoding - for now just apply radius
-                                setLocation(null, null, radius);
-                                onClose();
-                            }} className={`px-5 py-2 rounded-lg flex-row items-center justify-center ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"}`}>
-                                <MaterialIcons name="search" size={20} color="white" />
-                                <Text className="text-white text-base">Rechercher</Text>
+                            <TouchableOpacity
+                                onPress={handleSearch}
+                                disabled={locating}
+                                className={`px-5 py-2 rounded-lg flex-row items-center justify-center ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} ${locating ? "opacity-60" : ""}`}
+                            >
+                                {locating ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <>
+                                        <MaterialIcons name="search" size={20} color="white" />
+                                        <Text className="text-white text-base">Rechercher</Text>
+                                    </>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>

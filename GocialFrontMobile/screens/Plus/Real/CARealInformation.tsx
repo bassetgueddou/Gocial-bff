@@ -6,7 +6,10 @@ import React, { useState } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
+import AddressAutocomplete from "../../../src/components/AddressAutocomplete";
+import type { AddressAutocompleteResult } from "../../../src/types";
 
 const ProgressBar = ({ current, total }: { current: number; total: number }) => {
     const { isDarkMode } = useTheme();
@@ -39,6 +42,16 @@ const CARealInformation: React.FC = () => {
     const [isEditingMeeting, setIsEditingMeeting] = useState(!!formData.meetingPoint);
     const [placeName, setPlaceName] = useState(formData.location || "");
     const [address, setAddress] = useState(formData.address || "");
+
+    const handleAddressSelect = (result: AddressAutocompleteResult) => {
+        setAddress(result.address);
+        updateForm({
+            address: result.address,
+            latitude: result.latitude,
+            longitude: result.longitude,
+            city: result.city,
+        });
+    };
     const [meetingPoint, setMeetingPoint] = useState(formData.meetingPoint || "");
 
     const [showPicker, setShowPicker] = useState(false);
@@ -121,12 +134,11 @@ const CARealInformation: React.FC = () => {
                 {/* Champ de recherche "Adresse du lieu" */}
                 <Text className={`text-lg mb-1 px-2 font-semibold ${isDarkMode ? "text-white" : ""}`}>Adresse du lieu <Text className="text-red-600 text-xl">*</Text></Text>
                 <View className={`${isDarkMode ? "bg-black" : "bg-gray-100"} p-3 rounded-md space-x-2 mb-4`}>
-                    <TextInput
+                    <AddressAutocomplete
+                        onSelect={handleAddressSelect}
                         placeholder="Rechercher une adresse"
-                        placeholderTextColor={isDarkMode ? "#9EA1AB" : "#737373"}
-                        className={`${isDarkMode ? "bg-[#1D1E20] text-white border-white" : "bg-white text-black border-[#065C98]"} border rounded-md px-4 py-3`}
-                        value={address}
-                        onChangeText={setAddress}
+                        isDarkMode={isDarkMode}
+                        initialValue={address}
                     />
                 </View>
 
@@ -196,8 +208,16 @@ const CARealInformation: React.FC = () => {
 
             <View className="absolute bottom-[5rem] right-4">
                 <TouchableOpacity onPress={() => {
+                    if (!date) {
+                        Toast.show({ type: 'error', text1: 'Champ obligatoire', text2: 'Veuillez remplir tous les champs obligatoires', position: 'top', topOffset: 60 });
+                        return;
+                    }
+                    if (!address.trim()) {
+                        Toast.show({ type: 'error', text1: 'Champ obligatoire', text2: 'Veuillez remplir tous les champs obligatoires', position: 'top', topOffset: 60 });
+                        return;
+                    }
                     updateForm({
-                        date: date?.toISOString(),
+                        date: date.toISOString(),
                         address: address || undefined,
                         location: placeName || undefined,
                         meetingPoint: meetingPoint || undefined,

@@ -300,6 +300,41 @@ export interface ConversationPartner {
   avatar_url: string | null;
 }
 
+/** Result from Nominatim geocoding API */
+export interface NominatimResult {
+  place_id: number;
+  licence: string;
+  osm_type: string;
+  osm_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  address: {
+    house_number?: string;
+    road?: string;
+    suburb?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+    country_code?: string;
+    [key: string]: string | undefined;
+  };
+  boundingbox: string[];
+}
+
+/** Result returned by AddressAutocomplete onSelect callback */
+export interface AddressAutocompleteResult {
+  address: string;
+  latitude: number;
+  longitude: number;
+  city: string;
+}
+
 // Filter state for the Home activity feed
 export interface ActivityFilterState {
   search: string;

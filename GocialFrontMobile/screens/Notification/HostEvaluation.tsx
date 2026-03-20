@@ -89,23 +89,23 @@ const HostEvaluation: React.FC = () => {
                     <Text className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>
                         Évaluation (Hôte)
                     </Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
                         <MaterialIcons name="close" size={25} color="red" />
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
 
             {/* ScrollView contenant tout le contenu */}
-            <ScrollView className={`p-0 ${isDarkMode ? "bg-black" : "bg-white"} min-h-screen`} contentContainerStyle={{ paddingBottom: 170 }}>
+            <ScrollView className={`p-0 ${isDarkMode ? "bg-black" : "bg-white"}`} contentContainerStyle={{ paddingBottom: 20 }}>
 
-                {/* 📌 Carte de l'événement */}
+                {/* Carte de l'événement */}
                 <TouchableOpacity onPress={() => navigation.navigate("ActivityOverview")} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-white"} rounded-2xl shadow-lg p-4 mx-4`}
                     style={{
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.2,
                         shadowRadius: 4,
-                        elevation: 5, // Pour Android
+                        elevation: 5,
                     }}>
                     {/* Image principale */}
                     <View className="relative">
@@ -133,11 +133,9 @@ const HostEvaluation: React.FC = () => {
                         </Text>
                     </View>
 
-
-
                 </TouchableOpacity>
 
-                {/* 📌 Liste d'évaluation des participants */}
+                {/* Liste d'évaluation des participants */}
                 <View className="mt-6">
                     {participantsData.map((item) => (
                         <View key={item.id} className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F2F2]"} rounded-lg p-4 mb-4`}>
@@ -191,16 +189,16 @@ const HostEvaluation: React.FC = () => {
                     ))}
                 </View>
 
-                <View className={`absolute bottom-6 left-0 right-0 ${isDarkMode ? "bg-black" : "bg-white"} p-4 flex-row justify-between`}>
-                    <TouchableOpacity className={`px-8 py-3 border ${isDarkMode ? "border-[#FF4D4D]" : "border-[#FF4D4D]"} rounded-lg`}>
-                        <Text className="text-[#FF4D4D] font-bold">Annuler</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg`}>
-                        <Text className="text-white font-bold">Publier</Text>
-                    </TouchableOpacity>
-                </View>
-
             </ScrollView>
+
+            <View className={`${isDarkMode ? "bg-black" : "bg-white"} px-4 pb-6 flex-row justify-between`}>
+                <TouchableOpacity className={`px-8 py-3 border border-[#FF4D4D] rounded-lg`}>
+                    <Text className="text-[#FF4D4D] font-bold">Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg`}>
+                    <Text className="text-white font-bold">Publier</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };

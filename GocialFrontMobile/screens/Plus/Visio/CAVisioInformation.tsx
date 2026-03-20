@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
 
 const ProgressBar = ({ current, total }: { current: number; total: number }) => {
@@ -188,8 +189,16 @@ const CAVisioInformation: React.FC = () => {
 
             <View className="absolute bottom-[2rem] right-4">
                 <TouchableOpacity onPress={() => {
+                    if (!date) {
+                        Toast.show({ type: 'error', text1: 'Champ obligatoire', text2: 'Veuillez remplir tous les champs obligatoires', position: 'top', topOffset: 60 });
+                        return;
+                    }
+                    if (!link.trim()) {
+                        Toast.show({ type: 'error', text1: 'Champ obligatoire', text2: 'Veuillez remplir tous les champs obligatoires', position: 'top', topOffset: 60 });
+                        return;
+                    }
                     updateForm({
-                        date: date?.toISOString(),
+                        date: date.toISOString(),
                         visio_link: link || undefined,
                         city: selectedOption === 'ville' ? city : undefined,
                     });

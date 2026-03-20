@@ -10,6 +10,8 @@ import type { Activity } from "../../src/types";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
+import 'dayjs/locale/fr';
+dayjs.locale('fr');
 
 type DiaryFilter = "all" | "participations" | "liked";
 

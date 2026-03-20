@@ -9,11 +9,20 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
 from math import radians, cos, sin, asin, sqrt
+import os
+import uuid
+from werkzeug.utils import secure_filename
 
 from app import db
 from app.models import User, Activity, Participation, ActivityLike, Friendship
 
 activities_bp = Blueprint('activities', __name__)
+
+
+def allowed_file(filename):
+    """Check if file extension is allowed for uploads."""
+    allowed = current_app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'gif', 'webp'})
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed
 
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -349,6 +358,10 @@ def create_activity():
         visio_link = data.get('visio_link', '') or data.get('visio_url', '')
         activity.visio_url = visio_link.strip() or None
 
+    # Image URL (if frontend uploaded the image before creating the activity)
+    if data.get('image_url'):
+        activity.image_url = data['image_url'].strip()
+
     try:
         db.session.add(activity)
         db.session.commit()
@@ -433,6 +446,83 @@ def update_activity(activity_id):
     return jsonify({
         'message': 'Activité mise à jour',
         'activity': activity.to_dict(viewer_id=user_id)
+    }), 200
+
+
+# ---------------------------------------------------------------------
+# Upload activity image
+# ---------------------------------------------------------------------
+
+@activities_bp.route('/<int:activity_id>/image', methods=['POST'])
+@jwt_required()
+def upload_activity_image(activity_id):
+    """
+    Upload an image for an activity.
+
+    Only the host can upload an image.
+    Accepts multipart/form-data with 'image' field.
+    """
+    user_id = int(get_jwt_identity())
+
+    activity = Activity.query.get(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activité introuvable'}), 404
+
+    if activity.host_id != user_id:
+        return jsonify({'error': 'Non autorisé'}), 403
+
+    if 'image' not in request.files:
+        return jsonify({'error': 'Aucun fichier envoyé'}), 400
+
+    file = request.files['image']
+
+    if file.filename == '':
+        return jsonify({'error': 'Aucun fichier sélectionné'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Type de fichier non autorisé (JPEG, PNG, GIF, WebP acceptés)'}), 400
+
+    # Check file size (max 16 MB) — Flask MAX_CONTENT_LENGTH handles this
+    # at the request level, but we double-check here for safety
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    max_size = 16 * 1024 * 1024  # 16 MB
+    if file_size > max_size:
+        return jsonify({'error': 'Le fichier est trop volumineux (max 16 Mo)'}), 400
+
+    # Generate a UUID-based filename
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f'{uuid.uuid4().hex}.{ext}'
+    filename = secure_filename(filename)
+
+    # Get upload folder
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    activities_folder = os.path.join(upload_folder, 'activities')
+
+    # Create folder if it doesn't exist
+    os.makedirs(activities_folder, exist_ok=True)
+
+    # Save file
+    filepath = os.path.join(activities_folder, filename)
+    file.save(filepath)
+
+    # Update activity image URL
+    activity.image_url = f'/uploads/activities/{filename}'
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Activity image upload failed: {e}')
+        # Clean up saved file on DB error
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return jsonify({'error': "Échec de la mise à jour de l'image"}), 500
+
+    return jsonify({
+        'message': 'Image mise à jour',
+        'image_url': activity.image_url
     }), 200
 
 

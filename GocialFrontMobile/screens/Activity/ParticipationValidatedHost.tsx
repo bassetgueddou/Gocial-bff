@@ -107,7 +107,7 @@ const ParticipationValidatedHost: React.FC = () => {
                                     <View className="ml-2">
                                         <View className="flex-row mt-4">
                                             <Text className={`${isDarkMode ? "text-white" : "text-black"} font-medium`}>{displayName}</Text>
-                                            {isHost && <Text className="ml-1 relative bottom-2">Hôte</Text>}
+                                            {isHost && <Text className={`ml-1 relative bottom-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>Hôte</Text>}
                                             {typeLabel && (
                                                 <Text className={`font-medium ml-1 ${typeLabel === "Pro" ? "text-[#8260D2]" : "text-[#E8A838]"}`}>{typeLabel}</Text>
                                             )}

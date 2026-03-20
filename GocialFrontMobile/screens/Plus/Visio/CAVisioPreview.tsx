@@ -1,4 +1,4 @@
-﻿import { View, Text, TouchableOpacity, ScrollView, Linking, Image, ActivityIndicator } from "react-native";
+﻿import { View, Text, TouchableOpacity, ScrollView, Linking, Image, ActivityIndicator, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -54,7 +54,7 @@ const CAVisioPreview: React.FC = () => {
         }
         setPublishing(true);
         try {
-            await activityService.createActivity({
+            const result = await activityService.createActivity({
                 title: formData.title,
                 activity_type: 'visio',
                 date: formData.date,
@@ -66,6 +66,22 @@ const CAVisioPreview: React.FC = () => {
                 visio_link: formData.visio_link,
                 city: formData.city,
             });
+
+            // Upload activity image if one was selected
+            if (formData.imageUri && result.activity?.id) {
+                try {
+                    const fileName = formData.imageUri.split("/").pop() || "activity.jpg";
+                    const fileType = fileName.endsWith(".png") ? "image/png" : "image/jpeg";
+                    await activityService.uploadActivityImage(result.activity.id, {
+                        uri: Platform.OS === "android" ? formData.imageUri : formData.imageUri,
+                        type: fileType,
+                        name: fileName,
+                    });
+                } catch {
+                    // Image upload failed but activity was created — continue
+                }
+            }
+
             Toast.show({
                 type: 'success',
                 text1: 'Événement publié',

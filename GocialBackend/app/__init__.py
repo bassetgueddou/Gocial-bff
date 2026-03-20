@@ -52,6 +52,9 @@ def create_app(config_name='default'):
     # Shell context for flask shell
     _register_shell_context(app)
     
+    # Ensure upload directories exist
+    _ensure_upload_dirs(app)
+
     # Health check endpoint for load balancers / k8s probes
     @app.route('/health')
     def health_check():
@@ -135,6 +138,14 @@ def _register_error_handlers(app):
     @app.errorhandler(405)
     def method_not_allowed(e):
         return jsonify({'error': 'Méthode non autorisée'}), 405
+
+
+def _ensure_upload_dirs(app):
+    """Create upload directories if they don't exist."""
+    import os
+    upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+    for subfolder in ('avatars', 'activities'):
+        os.makedirs(os.path.join(upload_folder, subfolder), exist_ok=True)
 
 
 def _register_commands(app):

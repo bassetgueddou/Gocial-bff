@@ -80,12 +80,12 @@ const CANumberParticipants: React.FC = () => {
                     </View>
 
                     <View className="flex-row items-center justify-between mt-2">
-                        <Text className={`${isDarkMode ? "text-white" : ""}`}>0</Text>
+                        <Text className={`${isDarkMode ? "text-white" : ""}`}>2</Text>
                         <View className="flex-1 mx-2 relative justify-center">
                             <Slider
                                 value={maxParticipants}
                                 onValueChange={setMaxParticipants}
-                                minimumValue={0}
+                                minimumValue={2}
                                 maximumValue={50}
                                 step={1}
                                 minimumTrackTintColor="#3B82F6"

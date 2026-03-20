@@ -117,4 +117,17 @@ export const activityService = {
     const response = await api.get(`/api/activities/participating?page=${page}&status=${status}&include_past=${includePast}`);
     return response.data;
   },
+
+  uploadActivityImage: async (
+    activityId: number,
+    file: { uri: string; type: string; name: string }
+  ): Promise<{ message: string; image_url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file as unknown as Blob);
+
+    const response = await api.post(`/api/activities/${activityId}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };

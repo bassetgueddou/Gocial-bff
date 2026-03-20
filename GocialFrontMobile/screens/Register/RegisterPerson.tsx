@@ -26,6 +26,7 @@ type RootStackParamList = {
     Login: undefined;
     RegisterPerson: undefined;
     RegisterProAsso: undefined;
+    AddProfilePhotoPerson: { registerData: import("../../src/types").RegisterData };
 };
 
 // Typage de la navigation
@@ -390,9 +391,8 @@ const RegisterPerson: React.FC = () => {
                                 });
                                 return;
                             }
-                            setIsSubmitting(true);
-                            try {
-                                await register({
+                            navigation.navigate("AddProfilePhotoPerson", {
+                                registerData: {
                                     email: email.trim().toLowerCase(),
                                     password,
                                     pseudo: pseudo.trim(),
@@ -403,22 +403,8 @@ const RegisterPerson: React.FC = () => {
                                     city: city.trim() || undefined,
                                     phone: formattedNumber || undefined,
                                     user_type: 'person',
-                                });
-                                // Auth context handles navigation automatically
-                            } catch (err: unknown) {
-                                const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
-                                const msg =
-                                    apiErr?.response?.data?.error ||
-                                    apiErr?.response?.data?.message ||
-                                    "Erreur lors de l'inscription.";
-                                const fieldErrors = parseBackendError(msg);
-                                if (Object.keys(fieldErrors).length > 0) {
-                                    setErrors(prev => ({ ...prev, ...fieldErrors }) as InlineErrors);
-                                }
-                                Toast.show({ type: 'error', text1: 'Inscription échouée', text2: msg, position: 'top', topOffset: 60 });
-                            } finally {
-                                setIsSubmitting(false);
-                            }
+                                },
+                            });
                         }}
                     >
                         {isSubmitting ? (

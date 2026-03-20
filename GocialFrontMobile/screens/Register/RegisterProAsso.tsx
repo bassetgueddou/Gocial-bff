@@ -23,6 +23,7 @@ type RootStackParamList = {
   Login: undefined;
   RegisterPerson: undefined;
   RegisterProAsso: undefined;
+  AddProfilePhotoProAsso: { registerData: import("../../src/types").RegisterData };
 };
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -130,9 +131,8 @@ const RegisterProAsso: React.FC = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await register({
+    navigation.navigate("AddProfilePhotoProAsso", {
+      registerData: {
         email: email.trim().toLowerCase(),
         password,
         pseudo: pseudo.trim(),
@@ -144,22 +144,8 @@ const RegisterProAsso: React.FC = () => {
           ? { first_name: denomination.trim(), siren: siren.trim() }
           : { first_name: title.trim(), rna: rna.trim() }
         ),
-      });
-      // Auth context handles navigation automatically
-    } catch (err: unknown) {
-      const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
-      const msg =
-        apiErr?.response?.data?.error ||
-        apiErr?.response?.data?.message ||
-        "Erreur lors de l'inscription.";
-      const fieldErrors = parseBackendError(msg);
-      if (Object.keys(fieldErrors).length > 0) {
-        setErrors(prev => ({ ...prev, ...fieldErrors }) as InlineErrors);
-      }
-      Toast.show({ type: 'error', text1: msg, position: 'top', topOffset: 60 });
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+    });
   };
 
   return (
