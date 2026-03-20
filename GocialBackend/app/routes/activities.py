@@ -46,6 +46,8 @@ def get_activities():
     - category: activity category
     - date: specific date (YYYY-MM-DD)
     - lat, lng, radius: location-based filter (km)
+    - search: text search on title and description
+    - host_type: filter by host user type (person, pro, asso)
     - girls_only: filter women-only activities
     - free_only: show only free activities
     - page, per_page: pagination
@@ -62,6 +64,8 @@ def get_activities():
     lng = request.args.get('lng', type=float)
     radius = request.args.get('radius', 50, type=float)  # default 50km
     
+    search = request.args.get('search', '').strip()
+
     girls_only = request.args.get('girls_only', 'false').lower() == 'true'
     free_only = request.args.get('free_only', 'false').lower() == 'true'
     
@@ -78,10 +82,27 @@ def get_activities():
     if activity_type in ('real', 'visio'):
         query = query.filter(Activity.activity_type == activity_type)
     
-    # Category filter
+    # Category filter (supports comma-separated values, e.g. "accrobranche,bowling")
     if category:
-        query = query.filter(Activity.category == category)
-    
+        if ',' in category:
+            categories = [c.strip() for c in category.split(',') if c.strip()]
+            query = query.filter(Activity.category.in_(categories))
+        else:
+            query = query.filter(Activity.category == category)
+
+    # Host type filter (person, pro, asso)
+    host_type = request.args.get('host_type', '').strip()
+    if host_type:
+        query = query.join(User, Activity.host_id == User.id).filter(User.user_type == host_type)
+
+    # Text search on title and description
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.filter(
+            Activity.title.ilike(search_pattern) |
+            Activity.description.ilike(search_pattern)
+        )
+
     # Date filter
     if date_str:
         try:

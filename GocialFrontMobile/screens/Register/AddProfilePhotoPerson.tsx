@@ -3,12 +3,12 @@ import { View, Text, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../ThemeContext";
 
-const AddProfilePhotoProAsso : React.FC = () => {
+const AddProfilePhotoPerson : React.FC = () => {
     const { isDarkMode } = useTheme();
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const handlePress = () => {
-        console.log("Bouton d'ajout de photo cliqué !");
+        __DEV__ && console.log("Bouton d'ajout de photo cliqué !");
     };
 
     return (
@@ -66,4 +66,4 @@ const AddProfilePhotoProAsso : React.FC = () => {
     );
 };
 
-export default AddProfilePhotoProAsso;
+export default AddProfilePhotoPerson;

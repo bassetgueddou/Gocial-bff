@@ -8,7 +8,7 @@ const AddProfilePhotoProAsso : React.FC = () => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const handlePress = () => {
-        console.log("Bouton d'ajout de photo cliqué !");
+        __DEV__ && console.log("Bouton d'ajout de photo cliqué !");
     };
 
     return (
@@ -38,8 +38,8 @@ const AddProfilePhotoProAsso : React.FC = () => {
             {/* Aide */}
             <View className="items-center mt-6">
                 <TouchableOpacity className="flex-row items-center">
-                    <Image source={require("../../img/help-icon.png")} className="w-8 h-8 mr-2" />
-                    <Text className="text-black underline text-lg">Aide</Text>
+                    <Image source={require("../../img/help-icon.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="w-8 h-8 mr-2" />
+                    <Text className={`${isDarkMode ? "text-white" : "text-black"} underline text-lg`}>Aide</Text>
                 </TouchableOpacity>
             </View>
 

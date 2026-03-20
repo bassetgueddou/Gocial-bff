@@ -74,8 +74,8 @@ const MyFriends: React.FC = () => {
                 await removeFriend(selectedId);
                 Toast.show({
                     type: "success",
-                    text1: "Ami supprime",
-                    text2: `${selectedName} a bien ete supprime(e) de vos amis.`,
+                    text1: "Ami supprimé",
+                    text2: `${selectedName} a bien été supprimé(e) de vos amis.`,
                     visibilityTime: 2000,
                     position: "top",
                     topOffset: 60,
@@ -84,8 +84,8 @@ const MyFriends: React.FC = () => {
                 await unblockUser(selectedId);
                 Toast.show({
                     type: "success",
-                    text1: "Utilisateur debloque",
-                    text2: `${selectedName} a bien ete debloque(e).`,
+                    text1: "Utilisateur débloqué",
+                    text2: `${selectedName} a bien été débloqué(e).`,
                     visibilityTime: 2000,
                     position: "top",
                     topOffset: 60,
@@ -196,7 +196,7 @@ const MyFriends: React.FC = () => {
                 )}
                 ListEmptyComponent={
                     <View className="items-center justify-center py-10">
-                        <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucun resultat</Text>
+                        <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucun résultat</Text>
                     </View>
                 }
             />

@@ -73,11 +73,11 @@ const ProfilPersonOverview: React.FC = () => {
                 await friendService.removeFriend(friendshipId);
                 setFriendshipStatus(null);
                 setFriendshipId(null);
-                Toast.show({ type: "error", text1: "Ami supprime", text2: "Cette personne a ete retiree de tes amis.", position: "top", topOffset: 60 });
+                Toast.show({ type: "error", text1: "Ami supprimé", text2: "Cette personne a été retirée de tes amis.", position: "top", topOffset: 60 });
             } else {
                 await friendService.sendRequest(userId);
                 setFriendshipStatus("pending_sent");
-                Toast.show({ type: "success", text1: "Demande envoyee", text2: "Ta demande d'ami a ete envoyee.", position: "top", topOffset: 60 });
+                Toast.show({ type: "success", text1: "Demande envoyée", text2: "Ta demande d'ami a été envoyée.", position: "top", topOffset: 60 });
             }
         } catch {
             Toast.show({ type: "error", text1: "Erreur", position: "top", topOffset: 60 });
@@ -119,8 +119,8 @@ const ProfilPersonOverview: React.FC = () => {
         { label: "Langues", value: user.languages || "/" },
         { label: "Passions", value: user.passions || "/" },
         { label: "Profession", value: user.profession || "/" },
-        { label: "Etudes", value: user.studies || "/" },
-        { label: "Ecole", value: user.school || "/" },
+        { label: "Études", value: user.studies || "/" },
+        { label: "École", value: user.school || "/" },
         { label: "Alcool", value: user.alcohol || "/" },
         { label: "Tabac", value: user.tobacco || "/" },
         { label: "Alimentation", value: user.diet || "/" },
@@ -180,7 +180,7 @@ const ProfilPersonOverview: React.FC = () => {
 
                         <View className="flex-row items-center mt-2">
                             <View className="bg-green-600 px-3 py-[0.2rem] rounded-lg">
-                                <Text className="text-white font-semibold text-sm">{user.presence_rate || 100}% Presence</Text>
+                                <Text className="text-white font-semibold text-sm">{user.presence_rate || 100}% Présence</Text>
                             </View>
                             <View className="flex-row ml-3">
                                 {Array(5).fill(0).map((_, index) => (
@@ -199,14 +199,14 @@ const ProfilPersonOverview: React.FC = () => {
                                 </View>
                             )}
                             <View className={`border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg`}>
-                                <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{user.activities_count || 0} Activites</Text>
+                                <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{user.activities_count || 0} Activités</Text>
                             </View>
                         </View>
                     </View>
 
                     <View className="mt-8 w-full">
                         <View className="flex-row items-center justify-between px-4 mb-2">
-                            <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>A Propos</Text>
+                            <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>À Propos</Text>
                         </View>
                         <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"} py-4 px-6 rounded-lg w-full`}>
                             <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{user.bio || "Aucune description"}</Text>
@@ -215,7 +215,7 @@ const ProfilPersonOverview: React.FC = () => {
 
                     <View className="mt-6 w-full">
                         <View className="flex-row items-center justify-between px-4 mb-2">
-                            <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>Reseaux</Text>
+                            <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>Réseaux</Text>
                         </View>
                         <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"} py-4 px-6 rounded-lg w-full flex-row items-center justify-between`}>
                             <TouchableOpacity className={`border ${isDarkMode ? "bg-black border-[#1A6EDE]" : "border-[#065C98] bg-white"} flex-row items-center px-3 py-2 rounded-lg`}>
@@ -253,7 +253,7 @@ const ProfilPersonOverview: React.FC = () => {
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={() => setModalExternalMessageVisible(true)} className={`${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} px-6 py-3 rounded-lg w-[40%]`}>
-                        <Text className="text-white font-semibold text-center">Ecrire</Text>
+                        <Text className="text-white font-semibold text-center">Écrire</Text>
                     </TouchableOpacity>
                 </View>
                 <ExternalMessageModal

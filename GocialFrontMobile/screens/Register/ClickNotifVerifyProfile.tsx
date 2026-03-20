@@ -22,7 +22,7 @@ const ClickNotifVerifyProfile: React.FC = () => {
 
             {/* Texte Explicatif */}
             <Text className={`text-lg text-center ${isDarkMode ? "text-white" : "text-black"}  mt-1`}>
-                Ajoute t’as pièce d’identité pour pouvoir avoir accès à cette option.
+                Ajoute ta pièce d’identité pour pouvoir avoir accès à cette option.
             </Text>
 
             {/* Texte d'aide */}

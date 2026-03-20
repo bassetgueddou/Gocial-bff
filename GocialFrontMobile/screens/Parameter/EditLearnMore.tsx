@@ -112,10 +112,10 @@ const EditLearnMore: React.FC = () => {
                 {renderTextInput("Profession", profession, setProfession)}
                 {renderTextInput("Passions", passions, setPassions)}
 
-                <Text className={`font-bold text-lg mt-4 px-4 ${isDarkMode ? "text-white" : "text-black"}`}>Etudes</Text>
+                <Text className={`font-bold text-lg mt-4 px-4 ${isDarkMode ? "text-white" : "text-black"}`}>Études</Text>
                 {renderOptions("studies", ["Privé", "CAP", "Bac", "Bac +2", "Licence", "Master", "Doctorat", "Formation professionnelle"])}
 
-                {renderTextInput("Ecole", school, setSchool)}
+                {renderTextInput("École", school, setSchool)}
 
                 <Text className={`font-bold text-lg mt-4 px-4 ${isDarkMode ? "text-white" : "text-black"}`}>Alcool</Text>
                 {renderOptions("alcohol", ["Privé", "Non", "Parfois", "Lors de sorties entre amis"])}

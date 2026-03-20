@@ -6,6 +6,7 @@ import HomeReal from "../screens/Home/HomeReal";
 import HomeVisio from "../screens/Home/HomeVisio";
 import Header from "../screens/Header";
 import { useTheme } from "../screens/ThemeContext";
+import { FilterProvider } from "../src/contexts/FilterContext";
 
 const TopTabs = createMaterialTopTabNavigator();
 
@@ -13,6 +14,7 @@ const HomeTopTabs = () => {
     const { isDarkMode } = useTheme();
 
     return (
+        <FilterProvider>
         <View style={{ flex: 1 }}>
             <Header title="Activités" />
             <TopTabs.Navigator
@@ -34,6 +36,7 @@ const HomeTopTabs = () => {
                 <TopTabs.Screen name="Visio" component={HomeVisio} />
             </TopTabs.Navigator>
         </View>
+        </FilterProvider>
     );
 };
 

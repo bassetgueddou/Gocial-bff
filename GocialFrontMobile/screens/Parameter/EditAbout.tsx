@@ -20,10 +20,10 @@ const EditAbout: React.FC = () => {
         try {
             const data = await userService.updateProfile({ bio: description });
             if (updateUser) updateUser({ ...user, bio: description });
-            Toast.show({ type: "success", text1: "Profil mis a jour", position: "top", topOffset: 60 });
+            Toast.show({ type: "success", text1: "Profil mis à jour", position: "top", topOffset: 60 });
             navigation.goBack();
         } catch {
-            Toast.show({ type: "error", text1: "Erreur", text2: "Impossible de mettre a jour.", position: "top", topOffset: 60 });
+            Toast.show({ type: "error", text1: "Erreur", text2: "Impossible de mettre à jour.", position: "top", topOffset: 60 });
         } finally {
             setLoading(false);
         }
@@ -36,7 +36,7 @@ const EditAbout: React.FC = () => {
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <MaterialIcons name="arrow-back-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
-                    <Text className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>A Propos</Text>
+                    <Text className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>À Propos</Text>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <MaterialIcons name="close" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>

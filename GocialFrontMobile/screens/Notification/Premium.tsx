@@ -25,7 +25,7 @@ const Premium: React.FC<PremiumProps> = ({ onPress }) => {
             >
                 <View style={{ justifyContent: "center", alignItems: "center" }}>
                     <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-                        Passe à Gosial Premium
+                        Passe à Gocial Premium
                     </Text>
                     <Text style={{ color: "white", fontSize: 14 }}>
                         Découvre quand tes messages ont été vus

@@ -8,6 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import type { Activity } from "../../src/types";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import Toast from "react-native-toast-message";
 import dayjs from "dayjs";
 
 type DiaryFilter = "all" | "participations" | "liked";
@@ -33,14 +34,35 @@ const MyDiary: React.FC = () => {
 
     const fetchEvents = useCallback(async () => {
         try {
-            const [participatingRes, hostingRes, likedRes] = await Promise.all([
+            const [participatingRes, hostingRes, likedRes] = await Promise.allSettled([
                 activityService.getMyParticipations(1, "validated", true),
                 activityService.getHostedActivities(1, true),
                 activityService.getLikedActivities(1),
             ]);
-            setParticipatingActivities(participatingRes.activities || []);
-            setHostedActivities(hostingRes.activities || []);
-            setLikedActivities(likedRes.activities || []);
+
+            setParticipatingActivities(
+                participatingRes.status === 'fulfilled' ? participatingRes.value.activities || [] : []
+            );
+            setHostedActivities(
+                hostingRes.status === 'fulfilled' ? hostingRes.value.activities || [] : []
+            );
+            setLikedActivities(
+                likedRes.status === 'fulfilled' ? likedRes.value.activities || [] : []
+            );
+
+            // Warn user if any fetch failed
+            const failedCount = [participatingRes, hostingRes, likedRes].filter(
+                (r) => r.status === 'rejected'
+            ).length;
+            if (failedCount > 0) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Chargement partiel',
+                    text2: `${failedCount} source${failedCount > 1 ? 's' : ''} de données n'a pas pu être chargée.`,
+                    position: 'top',
+                    topOffset: 60,
+                });
+            }
         } catch (e) {
             console.error("Error fetching diary events:", e);
         } finally {
@@ -58,13 +80,13 @@ const MyDiary: React.FC = () => {
 
     // Build markedDates for react-native-calendars
     const markedDates = useMemo(() => {
-        const marks: Record<string, any> = {};
+        const marks: Record<string, { dots: Array<{ color: string }>; selected?: boolean; selectedColor?: string }> = {};
 
         const addDot = (dateStr: string, color: string) => {
             const day = dateStr.split("T")[0];
             if (!marks[day]) marks[day] = { dots: [] };
             if (!marks[day].dots) marks[day].dots = [];
-            if (!marks[day].dots.find((d: any) => d.color === color)) {
+            if (!marks[day].dots.find((d) => d.color === color)) {
                 marks[day].dots.push({ color });
             }
         };
@@ -225,7 +247,7 @@ const MyDiary: React.FC = () => {
                     <View className="px-5 pb-8">
                         {activitiesForDay.map((activity) => {
                             const host = activity.host;
-                            const hasAvatar = host && (host as any).avatar_url;
+                            const hasAvatar = host && host.avatar_url;
                             const displayName = host?.pseudo || host?.first_name || "Hôte";
                             const initial = displayName[0]?.toUpperCase() ?? "?";
                             const timeStr = activity.date
@@ -281,7 +303,7 @@ const MyDiary: React.FC = () => {
                                             <View className="flex-row items-center">
                                                 {hasAvatar ? (
                                                     <Image
-                                                        source={{ uri: (host as any).avatar_url }}
+                                                        source={{ uri: host.avatar_url ?? undefined }}
                                                         style={{ width: 20, height: 20, borderRadius: 10, marginRight: 6 }}
                                                     />
                                                 ) : (

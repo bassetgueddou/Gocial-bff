@@ -55,7 +55,7 @@ interface InfoItem {
 
 const infoData: InfoItem[] = [
     { label: "Type d’activité", value: "Accrobranche" },
-    { label: "Age des participants", value: "18-122" },
+    { label: "Âge des participants", value: "18-122" },
     { label: "Types de participants ", value: "Tout le monde" },
     { label: "Visibilité", value: "Publique" },
     { label: "Validation des participants", value: "Manuelle" },

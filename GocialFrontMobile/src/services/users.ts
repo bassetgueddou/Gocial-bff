@@ -35,7 +35,8 @@ export const userService = {
     name: string;
   }): Promise<{ message: string; avatar_url: string }> => {
     const formData = new FormData();
-    formData.append('file', file as any);
+    // React Native FormData accepts {uri, type, name} but TS expects Blob
+    formData.append('file', file as unknown as Blob);
 
     const response = await api.post('/api/users/profile/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

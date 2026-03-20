@@ -36,10 +36,11 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 const CANumberParticipants: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
-    const { updateForm } = useCreateActivity();
+    const { formData, updateForm } = useCreateActivity();
 
-    const [maxParticipants, setMaxParticipants] = useState(3);
+    const [maxParticipants, setMaxParticipants] = useState(formData.max_participants ?? 3);
     const [nonGocialParticipants, setNonGocialParticipants] = useState(3);
+    const [genderParity, setGenderParity] = useState(formData.genderRestriction === 'parity');
 
     return (
         <View className="flex-1">
@@ -156,9 +157,13 @@ const CANumberParticipants: React.FC = () => {
                         <Text className={`${isDarkMode ? "text-white" : "text-gray-700"} ml-[0.3rem]`}>Parité de genres</Text>
                     </View>
                     <Switch
-                        value={isDarkMode}
+                        value={genderParity}
+                        onValueChange={(value) => {
+                            setGenderParity(value);
+                            updateForm({ genderRestriction: value ? 'parity' : 'none' });
+                        }}
                         thumbColor="white"
-                        trackColor={{ false: "#E5E7EB", true: "black" }}
+                        trackColor={{ false: "#E5E7EB", true: "#065C98" }}
                         ios_backgroundColor="#E5E7EB"
                         style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }], position: "relative", left: 5 }}
                     />

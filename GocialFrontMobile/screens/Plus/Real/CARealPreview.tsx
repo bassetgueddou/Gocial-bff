@@ -25,18 +25,18 @@ const CARealPreview: React.FC = () => {
     const [publishing, setPublishing] = useState(false);
 
     const formatDate = (iso?: string) => {
-        if (!iso) return "Date non definie";
+        if (!iso) return "Date non définie";
         const d = new Date(iso);
         const days = ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."];
-        const months = ["jan.", "fev.", "mar.", "avr.", "mai", "juin", "juil.", "aout", "sept.", "oct.", "nov.", "dec."];
+        const months = ["jan.", "fév.", "mar.", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
         return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} - ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
     };
 
     const infoData = [
-        { label: "Type d'activite", value: formData.selectedActivityName || formData.category || "\u2014" },
-        { label: "Age des participants", value: `${formData.minAge ?? 18}-${formData.maxAge ?? 122}` },
+        { label: "Type d'activité", value: formData.selectedActivityName || formData.category || "\u2014" },
+        { label: "Âge des participants", value: `${formData.minAge ?? 18}-${formData.maxAge ?? 122}` },
         { label: "Types de participants", value: formData.genderRestriction === "all" ? "Tout le monde" : formData.genderRestriction || "Tout le monde" },
-        { label: "Visibilite", value: formData.visibility === "public" ? "Publique" : formData.visibility === "friends" ? "Mes amis Gocial" : formData.visibility || "Publique" },
+        { label: "Visibilité", value: formData.visibility === "public" ? "Publique" : formData.visibility === "friends" ? "Mes amis Gocial" : formData.visibility || "Publique" },
         { label: "Validation des participants", value: formData.require_approval ? "Manuelle" : "Automatique" },
     ];
 
@@ -61,8 +61,8 @@ const CARealPreview: React.FC = () => {
             });
             Toast.show({
                 type: 'success',
-                text1: 'Evenement publie',
-                text2: 'Ton evenement est a present en ligne.',
+                text1: 'Événement publié',
+                text2: 'Ton événement est à présent en ligne.',
                 position: 'top',
                 topOffset: 60,
             });
@@ -70,7 +70,7 @@ const CARealPreview: React.FC = () => {
             setTimeout(() => navigation.navigate("Main"), 1500);
         } catch (err: any) {
             const msg = err?.response?.data?.error || err?.message || 'Erreur inconnue';
-            Toast.show({ type: 'error', text1: 'Echec de la publication', text2: msg, position: 'top', topOffset: 60 });
+            Toast.show({ type: 'error', text1: 'Échec de la publication', text2: msg, position: 'top', topOffset: 60 });
         } finally {
             setPublishing(false);
         }
@@ -116,7 +116,7 @@ const CARealPreview: React.FC = () => {
 
                 <View className="mt-2 items-center">
                     <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold text-lg text-center`}>
-                        {formData.title || "Titre non defini"}
+                        {formData.title || "Titre non défini"}
                     </Text>
                     <Text className={`${isDarkMode ? "text-white" : "text-black"} text-base mt-1`}>
                         {formatDate(formData.date)}

@@ -34,8 +34,8 @@ const CATitle: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const { updateForm, formData } = useCreateActivity();
 
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
+    const [title, setTitle] = useState(formData.title || '');
+    const [description, setDescription] = useState(formData.description || '');
 
     return (
         <View className="flex-1">

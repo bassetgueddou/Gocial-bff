@@ -12,6 +12,7 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
+import { useFilters } from "../../src/contexts/FilterContext";
 import Slider from "@react-native-community/slider";
 
 const { width, height } = Dimensions.get("window");
@@ -23,6 +24,7 @@ interface WhereModalProps {
 
 const WhereModal: React.FC<WhereModalProps> = ({ visible, onClose }) => {
     const { isDarkMode } = useTheme();
+    const { setLocation } = useFilters();
     const [selectedMode, setSelectedMode] = useState<"nearby" | "city">("nearby");
     const [radius, setRadius] = useState<number>(10);
     const [city, setCity] = useState<string>("");
@@ -91,7 +93,7 @@ const WhereModal: React.FC<WhereModalProps> = ({ visible, onClose }) => {
                             {/* Slider de rayon */}
                             <Text className={` ${isDarkMode ? "text-white" : "text-black"} text-base mb-4`}>Dans un rayon de {radius} kms</Text>
                             <View className="w-full flex-row items-center justify-between">
-                                <Text className="text-black">0 km</Text>
+                                <Text className={isDarkMode ? "text-white" : "text-black"}>0 km</Text>
                                 <Slider
                                     style={{ flex: 1, marginHorizontal: 10 }}
                                     minimumValue={0}
@@ -102,18 +104,28 @@ const WhereModal: React.FC<WhereModalProps> = ({ visible, onClose }) => {
                                     minimumTrackTintColor={ isDarkMode ? "#1A6EDE" : "#1D4E89"}
                                     thumbTintColor={ isDarkMode ? "#1A6EDE" : "#1D4E89"}
                                 />
-                                <Text className="text-black">200 km</Text>
+                                <Text className={isDarkMode ? "text-white" : "text-black"}>200 km</Text>
                             </View>
                         </View>
 
                         {/* Boutons en bas */}
                         <View className={`absolute bottom-6 left-0 right-0 ${isDarkMode ? "bg-black" : "bg-white"} p-4 flex-row justify-between`}>
-                            <TouchableOpacity onPress={onClose} className={`border  
+                            <TouchableOpacity onPress={() => {
+                                setRadius(10);
+                                setCity("");
+                                setLocation(null, null, null);
+                                onClose();
+                            }} className={`border
                                 px-5 py-2 rounded-lg ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"}`}>
                                 <Text className={`text-base ${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"}`}>Réinitialiser</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={onClose} className={`px-5 py-2 rounded-lg flex-row items-center justify-center ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"}`}>
+                            <TouchableOpacity onPress={() => {
+                                // For "nearby" mode we pass radius only (lat/lng would come from device geolocation)
+                                // For "city" mode the search would need geocoding - for now just apply radius
+                                setLocation(null, null, radius);
+                                onClose();
+                            }} className={`px-5 py-2 rounded-lg flex-row items-center justify-center ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"}`}>
                                 <MaterialIcons name="search" size={20} color="white" />
                                 <Text className="text-white text-base">Rechercher</Text>
                             </TouchableOpacity>

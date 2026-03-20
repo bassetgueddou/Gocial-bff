@@ -1,5 +1,5 @@
 import api from './api';
-import type { Activity, CreateActivityData, Participation } from '../types';
+import type { Activity, CreateActivityData, Participation, ParticipantEntry } from '../types';
 
 interface ActivitiesResponse {
   activities: Activity[];
@@ -13,19 +13,21 @@ interface ActivityFilters {
   type?: 'real' | 'visio';
   category?: string;
   date?: string;
+  search?: string;
   lat?: number;
   lng?: number;
   radius?: number;
   girls_only?: boolean;
   free_only?: boolean;
+  host_type?: 'all' | 'person' | 'pro' | 'asso';
   page?: number;
   per_page?: number;
 }
 
 interface ParticipantsResponse {
-  validated: Array<{ user: any; message: string; requested_at: string; validated_at: string | null }>;
-  pending: Array<{ user: any; message: string; requested_at: string; validated_at: string | null }>;
-  rejected: Array<{ user: any; message: string; requested_at: string; validated_at: string | null }>;
+  validated: ParticipantEntry[];
+  pending: ParticipantEntry[];
+  rejected: ParticipantEntry[];
 }
 
 export const activityService = {
@@ -34,11 +36,13 @@ export const activityService = {
     if (filters.type) params.append('type', filters.type);
     if (filters.category) params.append('category', filters.category);
     if (filters.date) params.append('date', filters.date);
+    if (filters.search) params.append('search', filters.search);
     if (filters.lat !== undefined) params.append('lat', String(filters.lat));
     if (filters.lng !== undefined) params.append('lng', String(filters.lng));
     if (filters.radius) params.append('radius', String(filters.radius));
     if (filters.girls_only) params.append('girls_only', 'true');
     if (filters.free_only) params.append('free_only', 'true');
+    if (filters.host_type && filters.host_type !== 'all') params.append('host_type', filters.host_type);
     if (filters.page) params.append('page', String(filters.page));
     if (filters.per_page) params.append('per_page', String(filters.per_page));
 

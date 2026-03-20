@@ -33,16 +33,16 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 const CARealInformation: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
-    const { updateForm } = useCreateActivity();
+    const { updateForm, formData } = useCreateActivity();
 
-    const [isEditingPlace, setIsEditingPlace] = useState(false);
-    const [isEditingMeeting, setIsEditingMeeting] = useState(false);
-    const [placeName, setPlaceName] = useState("");
-    const [address, setAddress] = useState("");
-    const [meetingPoint, setMeetingPoint] = useState("");
+    const [isEditingPlace, setIsEditingPlace] = useState(!!formData.location);
+    const [isEditingMeeting, setIsEditingMeeting] = useState(!!formData.meetingPoint);
+    const [placeName, setPlaceName] = useState(formData.location || "");
+    const [address, setAddress] = useState(formData.address || "");
+    const [meetingPoint, setMeetingPoint] = useState(formData.meetingPoint || "");
 
     const [showPicker, setShowPicker] = useState(false);
-    const [date, setDate] = useState<Date | null>(null);
+    const [date, setDate] = useState<Date | null>(formData.date ? new Date(formData.date) : null);
 
     const onChange = (_event: any, selectedDate?: Date) => {
         setShowPicker(false);

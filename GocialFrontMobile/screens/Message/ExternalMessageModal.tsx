@@ -54,7 +54,7 @@ const ExternalMessageModal: React.FC<ExternalMessageModalProps> = ({ visible, on
     };
 
     const handleSubmit = () => {
-        console.log("Raison du signalement:", reason);
+        __DEV__ && console.log("Raison du signalement:", reason);
     };
 
     const displayMessages = messages.map((m: any) => ({

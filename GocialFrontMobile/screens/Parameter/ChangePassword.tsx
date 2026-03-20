@@ -23,10 +23,10 @@ const ChangePassword: React.FC = () => {
     const validate = (): boolean => {
         const errs: string[] = [];
         if (!currentPassword) errs.push("Veuillez entrer le mot de passe actuel.");
-        if (newPassword.length < 6) errs.push("Le mot de passe doit contenir au moins 6 caracteres.");
+        if (newPassword.length < 8) errs.push("Le mot de passe doit contenir au moins 8 caractères.");
+        if (!/[A-Z]/.test(newPassword)) errs.push("Il doit contenir au moins une lettre majuscule.");
+        if (!/[a-z]/.test(newPassword)) errs.push("Il doit contenir au moins une lettre minuscule.");
         if (!/\d/.test(newPassword)) errs.push("Il doit contenir au moins un chiffre.");
-        if (!/[a-zA-Z]/.test(newPassword)) errs.push("Il doit contenir au moins une lettre.");
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) errs.push("Il doit contenir au moins un caractere special.");
         if (newPassword !== confirmPassword) errs.push("Les 2 mots de passe ne correspondent pas.");
         setErrors(errs);
         return errs.length === 0;
@@ -37,7 +37,7 @@ const ChangePassword: React.FC = () => {
         setLoading(true);
         try {
             await authService.changePassword(currentPassword, newPassword);
-            Toast.show({ type: "success", text1: "Mot de passe modifie", text2: "Ton mot de passe a bien ete mis a jour.", position: "top", topOffset: 60 });
+            Toast.show({ type: "success", text1: "Mot de passe modifié", text2: "Ton mot de passe a bien été mis à jour.", position: "top", topOffset: 60 });
             navigation.goBack();
         } catch (err: any) {
             const msg = err?.response?.data?.error || "Erreur lors du changement de mot de passe.";
@@ -64,7 +64,7 @@ const ChangePassword: React.FC = () => {
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
                 <ScrollView className={`p-0 ${isDarkMode ? "bg-black" : "bg-white"}`} contentContainerStyle={{ paddingBottom: 120 }}>
                     <Text className={`${isDarkMode ? "text-white" : "text-black"} px-2 mb-2 text-sm text-center`}>
-                        Votre mot de passe doit contenir au moins 6 caracteres ainsi qu une combinaison de chiffres, de lettres et de caracteres speciaux (!$@%).
+                        Votre mot de passe doit contenir au moins 8 caractères, avec au moins une lettre majuscule, une lettre minuscule et un chiffre.
                     </Text>
 
                     <View className="mt-2 w-full">
@@ -131,7 +131,7 @@ const ChangePassword: React.FC = () => {
                             {checked && <MaterialIcons name="check" size={14} color="#FFFFFF" />}
                         </TouchableOpacity>
                         <Text className={`${isDarkMode ? "text-white" : "text-black"} text-sm py-2 px-4`}>
-                            Se deconnecter des autres appareils. Choisissez cette option si une autre personne a utilise votre compte.
+                            Se déconnecter des autres appareils. Choisissez cette option si une autre personne a utilisé votre compte.
                         </Text>
                     </View>
                 </ScrollView>

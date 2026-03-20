@@ -41,10 +41,16 @@ export interface User {
   is_active: boolean;
   is_premium: boolean;
   premium_type: string | null;
-  is_ghost_mode: boolean;
-  girls_only_mode: boolean;
-  dark_mode: boolean;
-  language: string;
+  is_ghost_mode?: boolean;
+  girls_only_mode?: boolean;
+  dark_mode?: boolean;
+  language?: string;
+  // Notification preferences (include_settings=True)
+  notif_new_activity?: boolean;
+  notif_friend_request?: boolean;
+  notif_messages?: boolean;
+  notif_participation?: boolean;
+  notif_push_enabled?: boolean;
   age: number | null;
   created_at: string;
   last_seen: string | null;
@@ -186,6 +192,7 @@ export interface Notification {
 
 // API response wrappers
 export interface PaginatedResponse<T> {
+  data: T[];
   total: number;
   pages: number;
   current_page: number;
@@ -260,3 +267,52 @@ export interface CalendarDayEvents {
 export type DiaryFilter = 'all' | 'participations' | 'liked';
 
 export type InlineErrors = Record<string, string>;
+
+/** A participant entry returned by GET /api/activities/:id/participants */
+export interface ParticipantEntry {
+  user: {
+    id: number;
+    pseudo: string | null;
+    avatar_url: string | null;
+    user_type?: string;
+    first_name?: string | null;
+    is_verified?: boolean;
+  };
+  message: string;
+  requested_at: string;
+  validated_at: string | null;
+}
+
+/** A message request returned by GET /api/messages/requests */
+export interface MessageRequest {
+  sender: UserPublic;
+  messages: Array<{
+    id: number;
+    content: string;
+    sent_at: string;
+  }>;
+}
+
+/** Partner info returned in MessagesResponse */
+export interface ConversationPartner {
+  id: number;
+  pseudo: string;
+  avatar_url: string | null;
+}
+
+// Filter state for the Home activity feed
+export interface ActivityFilterState {
+  search: string;
+  category: string | null;
+  dateFrom: string | null;
+  dateTo: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  radius: number | null;
+  mode: 'real' | 'visio';
+  sort: string | null;
+  hostId: number | null;
+  girlsOnly: boolean;
+  freeOnly: boolean;
+  hostType: 'all' | 'person' | 'pro' | 'asso';
+}

@@ -19,6 +19,7 @@ import Toast from "react-native-toast-message";
 type RootStackParamList = {
     AccountPrivacyProAsso: undefined;
     AccountPrivacyPerson: undefined;
+    NotificationsPerson: undefined;
     NotificationsProAsso: undefined;
     ProfilPerson: undefined;
     ProfilPersonPreview: undefined;
@@ -34,8 +35,10 @@ const { width } = Dimensions.get("window");
 
 const GeneralParameter: React.FC = () => {
     const { isDarkMode, toggleDarkMode } = useTheme();
-    const { user, logout } = useAuth();
-    const [girlsOnly, setGirlsOnly] = useState(false);
+    const { user, logout, refreshUser } = useAuth();
+    const [girlsOnly, setGirlsOnly] = useState(user?.girls_only_mode ?? false);
+    const [togglingGirlsOnly, setTogglingGirlsOnly] = useState(false);
+    const [togglingDarkMode, setTogglingDarkMode] = useState(false);
     const [isGirlsOnlyModalVisible, setIsGirlsOnlyModalVisible] = useState(false);
     const [isGirlsOnlyActiveModalVisible, setIsGirlsOnlyActiveModalVisible] = useState(false);
     const [isHelpModalVisible, setIsHelpModalVisible] = useState(false);
@@ -143,7 +146,7 @@ const GeneralParameter: React.FC = () => {
                 <Text className={`${isDarkMode ? "text-white" : "text-black"} font-semibold relative top-3 text-lg mt-1`}>General</Text>
                 <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-100"} rounded-md mt-6 p-4`}>
                     <TouchableOpacity onPress={() => navigation.navigate("PremiumOfferPerson")} className="flex-row justify-between items-center py-3">
-                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Passer a Premium</Text>
+                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Passer à Premium</Text>
                         <MaterialIcons name="arrow-forward-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
                     <View className="flex-row justify-between items-center py-3">
@@ -151,20 +154,32 @@ const GeneralParameter: React.FC = () => {
                             <Image source={require("../../img/dark-mode.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-6 w-6" />
                             <Text className={`${isDarkMode ? "text-white" : "text-gray-700"} ml-[0.3rem]`}>Mode sombre</Text>
                         </View>
-                        <Switch value={isDarkMode} onValueChange={toggleDarkMode} thumbColor="white" trackColor={{ false: "#E5E7EB", true: "black" }} ios_backgroundColor="#E5E7EB" style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }], position: "relative", left: 5 }} />
+                        <Switch value={isDarkMode} onValueChange={async (value) => {
+                            if (togglingDarkMode) return;
+                            setTogglingDarkMode(true);
+                            toggleDarkMode();
+                            try {
+                                await userService.updateProfile({ dark_mode: value });
+                                await refreshUser();
+                            } catch {
+                                Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de sauvegarder le mode sombre.', position: 'top', topOffset: 60 });
+                            } finally {
+                                setTogglingDarkMode(false);
+                            }
+                        }} disabled={togglingDarkMode} thumbColor="white" trackColor={{ false: "#E5E7EB", true: "black" }} ios_backgroundColor="#E5E7EB" style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }], position: "relative", left: 5 }} />
                     </View>
                     <TouchableOpacity onPress={() => navigation.navigate("AccountPrivacyPerson")} className="flex-row justify-between items-center py-3">
-                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Confidentialite du compte</Text>
+                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Confidentialité du compte</Text>
                         <MaterialIcons name="arrow-forward-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
                     <TouchableOpacity className="flex-row justify-between items-center py-3">
                         <View className="flex-row items-center space-x-3">
                             <Image source={require("../../img/check.png")} className="h-6 w-6" />
-                            <Text className={`${isDarkMode ? "text-white" : "text-gray-700"} ml-[0.3rem]`}>Verifier mon profil</Text>
+                            <Text className={`${isDarkMode ? "text-white" : "text-gray-700"} ml-[0.3rem]`}>Vérifier mon profil</Text>
                         </View>
                         <MaterialIcons name="arrow-forward-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate("NotificationsProAsso")} className="flex-row justify-between items-center py-3">
+                    <TouchableOpacity onPress={() => navigation.navigate(user?.user_type === 'person' ? 'NotificationsPerson' : 'NotificationsProAsso')} className="flex-row justify-between items-center py-3">
                         <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Notifications</Text>
                         <MaterialIcons name="arrow-forward-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
@@ -174,7 +189,21 @@ const GeneralParameter: React.FC = () => {
                             <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Girls only</Text>
                         </View>
                         <View className="flex-row items-center space-x-3">
-                            <Switch value={girlsOnly} onValueChange={(value) => { setGirlsOnly(value); if (value) setIsGirlsOnlyActiveModalVisible(true); }} thumbColor="white" trackColor={{ false: "#E5E7EB", true: "green" }} ios_backgroundColor="#E5E7EB" style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }} />
+                            <Switch value={girlsOnly} onValueChange={async (value) => {
+                                if (togglingGirlsOnly) return;
+                                setTogglingGirlsOnly(true);
+                                setGirlsOnly(value);
+                                if (value) setIsGirlsOnlyActiveModalVisible(true);
+                                try {
+                                    await userService.updateProfile({ girls_only_mode: value });
+                                    await refreshUser();
+                                } catch {
+                                    setGirlsOnly(!value);
+                                    Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de modifier le mode Girls Only.', position: 'top', topOffset: 60 });
+                                } finally {
+                                    setTogglingGirlsOnly(false);
+                                }
+                            }} disabled={togglingGirlsOnly} thumbColor="white" trackColor={{ false: "#E5E7EB", true: "green" }} ios_backgroundColor="#E5E7EB" style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }} />
                             <TouchableOpacity onPress={() => setIsGirlsOnlyModalVisible(true)}>
                                 <Image source={require("../../img/info.png")} style={{ width: 20, height: 20, marginLeft: 5, tintColor: isDarkMode ? "white" : "black" }} />
                             </TouchableOpacity>
@@ -197,16 +226,16 @@ const GeneralParameter: React.FC = () => {
                         <MaterialIcons name="arrow-forward-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
                     <TouchableOpacity className="flex-row justify-between py-3">
-                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Politique de confidentialite</Text>
+                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Politique de confidentialité</Text>
                     </TouchableOpacity>
                     <TouchableOpacity className="flex-row justify-between py-3">
-                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Conditions d utilisation</Text>
+                        <Text className={`${isDarkMode ? "text-white" : "text-gray-700"}`}>Conditions d'utilisation</Text>
                     </TouchableOpacity>
                 </View>
 
                 <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-100"} rounded-md mt-6 p-4`}>
                     <TouchableOpacity onPress={() => setIsSuspendAccountModalVisible(true)} className="bg-[#FF4D4D] py-3 px-6 rounded-md w-3/4 self-start">
-                        <Text className={`${isDarkMode ? "text-black" : "text-white"} text-center font-semibold`}>Desactiver le compte</Text>
+                        <Text className={`${isDarkMode ? "text-black" : "text-white"} text-center font-semibold`}>Désactiver le compte</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setIsDeleteAccountModalVisible(true)} className="bg-black py-3 px-6 rounded-md w-3/4 self-start mt-2">
                         <Text className="text-[#FF4D4D] text-center font-semibold">Supprimer le compte</Text>
