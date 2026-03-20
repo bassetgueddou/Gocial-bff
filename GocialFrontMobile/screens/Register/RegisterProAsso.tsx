@@ -15,6 +15,7 @@ const getPasswordStrength = (pwd: string): number => {
   if (/[A-Z]/.test(pwd)) score++;
   if (/[a-z]/.test(pwd)) score++;
   if (/[0-9]/.test(pwd)) score++;
+  if (/[^a-zA-Z0-9]/.test(pwd)) score++;
   return score;
 };
 const strengthColors = ['#EF4444', '#F97316', '#EAB308', '#22C55E'];
@@ -74,6 +75,7 @@ const RegisterProAsso: React.FC = () => {
       else if (!/[A-Z]/.test(val)) { u.password = '1 majuscule requise'; }
       else if (!/[a-z]/.test(val)) { u.password = '1 minuscule requise'; }
       else if (!/[0-9]/.test(val)) { u.password = '1 chiffre requis'; }
+      else if (!/[^a-zA-Z0-9]/.test(val)) { u.password = '1 caractère spécial requis (!@#$%...).'; }
       else { delete u.password; }
       return u;
     });
@@ -122,8 +124,8 @@ const RegisterProAsso: React.FC = () => {
     }
     if (!password) {
       validationErrors.password = 'Le mot de passe est obligatoire.';
-    } else if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-      validationErrors.password = 'Mot de passe trop faible (8 car., 1 maj., 1 min., 1 chiffre)';
+    } else if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+      validationErrors.password = 'Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial (!@#$%...).';
     }
 
     if (Object.keys(validationErrors).length > 0) {
@@ -201,7 +203,7 @@ const RegisterProAsso: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <Text className="text-red-500 font-medium mt-4">* Obligatoire</Text>
+        <Text className="text-red-700 font-medium mt-4">* Obligatoire</Text>
 
         {/* Type selection */}
         <View className="mt-6 flex-row justify-between gap-4">
@@ -224,51 +226,51 @@ const RegisterProAsso: React.FC = () => {
           {selectedType === "pro" ? (
             <>
               <View className="mt-6">
-                <Text className="text-base font-medium">Dénomination <Text className="text-red-500">*</Text></Text>
+                <Text className="text-base font-medium">Dénomination <Text className="text-red-700">*</Text></Text>
                 <TextInput value={denomination} onChangeText={t => { setDenomination(t); clearError('denomination'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
-                {errors.denomination ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.denomination}</Text> : null}
+                {errors.denomination ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.denomination}</Text> : null}
               </View>
               <View className="mt-6">
-                <Text className="text-base font-medium">Siren <Text className="text-red-500">*</Text></Text>
+                <Text className="text-base font-medium">Siren <Text className="text-red-700">*</Text></Text>
                 <TextInput value={siren} onChangeText={t => { setSiren(t); clearError('siren'); }} keyboardType="numeric" className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
-                {errors.siren ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.siren}</Text> : null}
+                {errors.siren ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.siren}</Text> : null}
               </View>
             </>
           ) : (
             <>
               <View className="mt-6">
-                <Text className="text-base font-medium">Titre <Text className="text-red-500">*</Text></Text>
+                <Text className="text-base font-medium">Titre <Text className="text-red-700">*</Text></Text>
                 <TextInput value={title} onChangeText={t => { setTitle(t); clearError('title'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
-                {errors.title ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.title}</Text> : null}
+                {errors.title ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.title}</Text> : null}
               </View>
               <View className="mt-6">
-                <Text className="text-base font-medium">Numéro RNA <Text className="text-red-500">*</Text></Text>
+                <Text className="text-base font-medium">Numéro RNA <Text className="text-red-700">*</Text></Text>
                 <TextInput value={rna} onChangeText={t => { setRna(t); clearError('rna'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
-                {errors.rna ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.rna}</Text> : null}
+                {errors.rna ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.rna}</Text> : null}
               </View>
             </>
           )}
 
           <View className="mt-6">
-            <Text className="text-base font-medium">Nom visible <Text className="text-red-500">*</Text></Text>
+            <Text className="text-base font-medium">Nom visible <Text className="text-red-700">*</Text></Text>
             <TextInput value={companyName} onChangeText={t => { setCompanyName(t); clearError('company_name'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
-            {errors.company_name ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.company_name}</Text> : null}
+            {errors.company_name ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.company_name}</Text> : null}
           </View>
 
           <View className="mt-6">
-            <Text className="text-base font-medium">Adresse <Text className="text-red-500">*</Text></Text>
+            <Text className="text-base font-medium">Adresse <Text className="text-red-700">*</Text></Text>
             <TextInput value={address} onChangeText={t => { setAddress(t); clearError('address'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
-            {errors.address ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.address}</Text> : null}
+            {errors.address ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.address}</Text> : null}
           </View>
 
           <View className="mt-6">
-            <Text className="text-base font-medium">Secteur d'activité <Text className="text-red-500">*</Text></Text>
+            <Text className="text-base font-medium">Secteur d'activité <Text className="text-red-700">*</Text></Text>
             <TextInput value={sector} onChangeText={t => { setSector(t); clearError('sector'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
-            {errors.sector ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.sector}</Text> : null}
+            {errors.sector ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.sector}</Text> : null}
           </View>
 
           <View className="mt-6">
-            <Text className="text-base font-medium">Pseudo <Text className="text-red-500">*</Text></Text>
+            <Text className="text-base font-medium">Pseudo <Text className="text-red-700">*</Text></Text>
             <TextInput
               value={pseudo}
               onChangeText={t => { setPseudo(t); clearError('pseudo'); }}
@@ -277,11 +279,11 @@ const RegisterProAsso: React.FC = () => {
               placeholder="(exemple : mon_entreprise)"
               className={`border rounded-md px-4 py-3 mt-2 ${errors.pseudo ? 'border-red-500' : 'border-gray-300'}`}
             />
-            {errors.pseudo ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.pseudo}</Text> : null}
+            {errors.pseudo ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.pseudo}</Text> : null}
           </View>
 
           <View className="mt-6">
-            <Text className="text-base font-medium">Email <Text className="text-red-500">*</Text></Text>
+            <Text className="text-base font-medium">Email <Text className="text-red-700">*</Text></Text>
             <TextInput
               value={email}
               onChangeText={t => { setEmail(t); clearError('email'); }}
@@ -292,11 +294,11 @@ const RegisterProAsso: React.FC = () => {
               placeholder="contact@entreprise.com"
               className={`border rounded-md px-4 py-3 mt-2 ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
             />
-            {errors.email ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.email}</Text> : null}
+            {errors.email ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.email}</Text> : null}
           </View>
 
           <View className="mt-6">
-            <Text className="text-base font-medium">Mot de passe <Text className="text-red-500">*</Text></Text>
+            <Text className="text-base font-medium">Mot de passe <Text className="text-red-700">*</Text></Text>
             <TextInput
               value={password}
               onChangeText={t => { setPassword(t); clearError('password'); }}
@@ -305,7 +307,7 @@ const RegisterProAsso: React.FC = () => {
               placeholder="Minimum 8 caractères"
               className={`border rounded-md px-4 py-3 mt-2 ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
             />
-            {errors.password ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.password}</Text> : null}
+            {errors.password ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.password}</Text> : null}
             {/* Indicateur de force du mot de passe */}
             {password.length > 0 && (
               <View className="mt-2">
