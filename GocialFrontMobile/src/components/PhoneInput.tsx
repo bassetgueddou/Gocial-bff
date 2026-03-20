@@ -94,6 +94,7 @@ const COUNTRIES: { cca2: string; flag: string; callingCode: string; name: string
   { cca2: 'IR', flag: '🇮🇷', callingCode: '98', name: 'Iran' },
   { cca2: 'IE', flag: '🇮🇪', callingCode: '353', name: 'Irlande' },
   { cca2: 'IS', flag: '🇮🇸', callingCode: '354', name: 'Islande' },
+  { cca2: 'IL', flag: '🇮🇱', callingCode: '972', name: 'Israël' },
   { cca2: 'IT', flag: '🇮🇹', callingCode: '39', name: 'Italie' },
   { cca2: 'JM', flag: '🇯🇲', callingCode: '1876', name: 'Jamaïque' },
   { cca2: 'JP', flag: '🇯🇵', callingCode: '81', name: 'Japon' },
