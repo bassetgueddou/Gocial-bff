@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../../screens/ThemeContext';
 
 interface PhoneInputProps {
@@ -14,6 +14,7 @@ const COUNTRIES: { cca2: string; flag: string; callingCode: string; name: string
   { cca2: 'BE', flag: '🇧🇪', callingCode: '32', name: 'Belgique' },
   { cca2: 'CH', flag: '🇨🇭', callingCode: '41', name: 'Suisse' },
   { cca2: 'LU', flag: '🇱🇺', callingCode: '352', name: 'Luxembourg' },
+  { cca2: 'MC', flag: '🇲🇨', callingCode: '377', name: 'Monaco' },
   { cca2: 'CA', flag: '🇨🇦', callingCode: '1', name: 'Canada' },
   { cca2: 'US', flag: '🇺🇸', callingCode: '1', name: 'États-Unis' },
   { cca2: 'GB', flag: '🇬🇧', callingCode: '44', name: 'Royaume-Uni' },
@@ -22,11 +23,26 @@ const COUNTRIES: { cca2: string; flag: string; callingCode: string; name: string
   { cca2: 'IT', flag: '🇮🇹', callingCode: '39', name: 'Italie' },
   { cca2: 'PT', flag: '🇵🇹', callingCode: '351', name: 'Portugal' },
   { cca2: 'NL', flag: '🇳🇱', callingCode: '31', name: 'Pays-Bas' },
+  { cca2: 'PL', flag: '🇵🇱', callingCode: '48', name: 'Pologne' },
+  { cca2: 'RO', flag: '🇷🇴', callingCode: '40', name: 'Roumanie' },
+  { cca2: 'TR', flag: '🇹🇷', callingCode: '90', name: 'Turquie' },
   { cca2: 'MA', flag: '🇲🇦', callingCode: '212', name: 'Maroc' },
   { cca2: 'DZ', flag: '🇩🇿', callingCode: '213', name: 'Algérie' },
   { cca2: 'TN', flag: '🇹🇳', callingCode: '216', name: 'Tunisie' },
+  { cca2: 'LY', flag: '🇱🇾', callingCode: '218', name: 'Libye' },
+  { cca2: 'EG', flag: '🇪🇬', callingCode: '20', name: 'Égypte' },
   { cca2: 'SN', flag: '🇸🇳', callingCode: '221', name: 'Sénégal' },
   { cca2: 'CI', flag: '🇨🇮', callingCode: '225', name: "Côte d'Ivoire" },
+  { cca2: 'CM', flag: '🇨🇲', callingCode: '237', name: 'Cameroun' },
+  { cca2: 'MG', flag: '🇲🇬', callingCode: '261', name: 'Madagascar' },
+  { cca2: 'CD', flag: '🇨🇩', callingCode: '243', name: 'Congo (RDC)' },
+  { cca2: 'BR', flag: '🇧🇷', callingCode: '55', name: 'Brésil' },
+  { cca2: 'MX', flag: '🇲🇽', callingCode: '52', name: 'Mexique' },
+  { cca2: 'AR', flag: '🇦🇷', callingCode: '54', name: 'Argentine' },
+  { cca2: 'JP', flag: '🇯🇵', callingCode: '81', name: 'Japon' },
+  { cca2: 'CN', flag: '🇨🇳', callingCode: '86', name: 'Chine' },
+  { cca2: 'IN', flag: '🇮🇳', callingCode: '91', name: 'Inde' },
+  { cca2: 'AU', flag: '🇦🇺', callingCode: '61', name: 'Australie' },
 ];
 
 const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, error }) => {
@@ -75,18 +91,20 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, error }) =
 
       {/* Country picker dropdown */}
       {showPicker && (
-        <View className={`mt-1 rounded-xl border ${isDarkMode ? 'bg-[#1D1E20] border-gray-700' : 'bg-white border-gray-200'} shadow-md max-h-48 overflow-hidden`}>
-          {COUNTRIES.map((country) => (
-            <TouchableOpacity
-              key={country.cca2}
-              onPress={() => handleSelect(country)}
-              className={`flex-row items-center px-4 py-3 ${selectedCountry.cca2 === country.cca2 ? (isDarkMode ? 'bg-[#1A6EDE22]' : 'bg-[#065C9811]') : ''}`}
-            >
-              <Text className="text-xl mr-3">{country.flag}</Text>
-              <Text className={`flex-1 text-sm ${isDarkMode ? 'text-white' : 'text-black'}`}>{country.name}</Text>
-              <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>+{country.callingCode}</Text>
-            </TouchableOpacity>
-          ))}
+        <View className={`mt-1 rounded-xl border ${isDarkMode ? 'bg-[#1D1E20] border-gray-700' : 'bg-white border-gray-200'}`} style={{ maxHeight: 220 }}>
+          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
+            {COUNTRIES.map((country) => (
+              <TouchableOpacity
+                key={country.cca2}
+                onPress={() => handleSelect(country)}
+                className={`flex-row items-center px-4 py-3 ${selectedCountry.cca2 === country.cca2 ? (isDarkMode ? 'bg-[#1A6EDE22]' : 'bg-[#065C9811]') : ''}`}
+              >
+                <Text className="text-xl mr-3">{country.flag}</Text>
+                <Text className={`flex-1 text-sm ${isDarkMode ? 'text-white' : 'text-black'}`}>{country.name}</Text>
+                <Text className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>+{country.callingCode}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       )}
 
