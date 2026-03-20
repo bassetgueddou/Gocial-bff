@@ -122,7 +122,7 @@ const CATitle: React.FC = () => {
                         <TextInput
                             value={description}
                             onChangeText={setDescription}
-                            placeholder="Par exemple : Discutons de l'actualité du jour en anglais, dans un esprit conviviale. Tout les niveaux sont les bienvenus."
+                            placeholder="Par exemple : Discutons de l'actualité du jour en anglais, dans un esprit convivial. Tous les niveaux sont les bienvenus."
                             className={`${isDarkMode ? "bg-[#1D1E20] border-[0.3px] border-white" : "bg-white border border-[#065C98]"} rounded-md px-3 py-2 text-base h-[10rem] text-left`}
                             placeholderTextColor={isDarkMode ? "#9EA1AB" : "#737373"}
                             multiline

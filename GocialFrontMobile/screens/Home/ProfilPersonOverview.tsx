@@ -129,7 +129,7 @@ const ProfilPersonOverview: React.FC = () => {
     return (
         <View className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"} pb-8`}>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-                <MoreProfilModal visible={modalMoreProfilVisible} onClose={() => setModalMoreProfilVisible(false)} />
+                <MoreProfilModal visible={modalMoreProfilVisible} onClose={() => setModalMoreProfilVisible(false)} userId={userId} pseudo={user?.pseudo || user?.first_name} />
 
                 <ScrollView className="flex-1">
                     <View className="relative">
