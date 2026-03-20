@@ -1,12 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
+import Toast from 'react-native-toast-message';
 import { friendService } from '../services/friends';
 import type { Friendship } from '../types';
+
+interface BlockedUser {
+  id: number;
+  pseudo: string | null;
+  first_name: string | null;
+  avatar_url: string | null;
+  blocked_at: string;
+}
 
 export const useFriends = () => {
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<Friendship[]>([]);
   const [sentRequests, setSentRequests] = useState<Friendship[]>([]);
-  const [blocked, setBlocked] = useState<any[]>([]);
+  const [blocked, setBlocked] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,9 +25,10 @@ export const useFriends = () => {
       setError(null);
       const data = await friendService.getFriends();
       const list = Array.isArray(data) ? data : data.friends || [];
-      setFriends(list as any);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Impossible de charger les amis.');
+      setFriends(list as Friendship[]);
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setError(apiErr?.response?.data?.error || 'Impossible de charger les amis.');
     } finally {
       setLoading(false);
     }
@@ -28,14 +38,14 @@ export const useFriends = () => {
     try {
       const data = await friendService.getRequests();
       if (Array.isArray(data)) {
-        setReceivedRequests(data as any);
+        setReceivedRequests(data as Friendship[]);
         setSentRequests([]);
       } else {
-        setReceivedRequests((data.received || []) as any);
-        setSentRequests((data.sent || []) as any);
+        setReceivedRequests((data.received || []) as Friendship[]);
+        setSentRequests((data.sent || []) as Friendship[]);
       }
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de charger les demandes d\'amis', position: 'top', topOffset: 60 });
     }
   }, []);
 
@@ -43,9 +53,9 @@ export const useFriends = () => {
     try {
       const data = await friendService.getBlocked();
       const list = Array.isArray(data) ? data : data.blocked || [];
-      setBlocked(list);
+      setBlocked(list as BlockedUser[]);
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de charger les utilisateurs bloqués', position: 'top', topOffset: 60 });
     }
   }, []);
 
@@ -61,7 +71,7 @@ export const useFriends = () => {
       setReceivedRequests((prev) => prev.filter((r) => r.id !== friendshipId));
       fetchFriends(); // Refresh friends list
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible d\'accepter la demande', position: 'top', topOffset: 60 });
     }
   }, [fetchFriends]);
 
@@ -71,7 +81,7 @@ export const useFriends = () => {
       setReceivedRequests((prev) => prev.filter((r) => r.id !== friendshipId));
       setSentRequests((prev) => prev.filter((r) => r.id !== friendshipId));
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de rejeter la demande', position: 'top', topOffset: 60 });
     }
   }, []);
 
@@ -80,7 +90,7 @@ export const useFriends = () => {
       await friendService.removeFriend(friendshipId);
       setFriends((prev) => prev.filter((f) => f.id !== friendshipId));
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de supprimer l\'ami', position: 'top', topOffset: 60 });
     }
   }, []);
 
@@ -90,7 +100,7 @@ export const useFriends = () => {
       fetchBlocked();
       fetchFriends();
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de bloquer l\'utilisateur', position: 'top', topOffset: 60 });
     }
   }, [fetchBlocked, fetchFriends]);
 
@@ -99,7 +109,7 @@ export const useFriends = () => {
       await friendService.unblockUser(userId);
       setBlocked((prev) => prev.filter((b) => b.id !== userId));
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible de débloquer l\'utilisateur', position: 'top', topOffset: 60 });
     }
   }, []);
 
@@ -108,7 +118,7 @@ export const useFriends = () => {
       await friendService.sendRequest(userId);
       fetchRequests();
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible d\'envoyer la demande d\'ami', position: 'top', topOffset: 60 });
     }
   }, [fetchRequests]);
 
@@ -117,7 +127,7 @@ export const useFriends = () => {
       await friendService.cancelRequest(friendshipId);
       setSentRequests((prev) => prev.filter((r) => (r.friendship_id || r.id) !== friendshipId));
     } catch {
-      // Silent
+      Toast.show({ type: 'error', text1: 'Erreur', text2: 'Impossible d\'annuler la demande d\'ami', position: 'top', topOffset: 60 });
     }
   }, []);
 

@@ -1,5 +1,5 @@
-﻿import React, { useState, useRef } from "react";
-import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator } from "react-native";
+﻿import React, { useState, useRef, useEffect } from "react";
+import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator, Linking } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,6 +7,8 @@ import { useTheme } from "../ThemeContext";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useAuth } from "../../src/contexts/AuthContext";
+import { userService } from "../../src/services/users";
+import Toast from "react-native-toast-message";
 import moment from "moment";
 
 type RootStackParamList = {
@@ -27,7 +29,18 @@ const ProfilPerson: React.FC = () => {
     const { user } = useAuth();
 
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [avgRating, setAvgRating] = useState(0);
+    const [totalEvaluations, setTotalEvaluations] = useState(0);
     const flatListRef = useRef<FlatList>(null);
+
+    useEffect(() => {
+        if (user?.id) {
+            userService.getUserRating(user.id).then(data => {
+                setAvgRating(data.avg_rating);
+                setTotalEvaluations(data.total_evaluations);
+            }).catch(() => {});
+        }
+    }, [user?.id]);
 
     const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const index = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -44,15 +57,15 @@ const ProfilPerson: React.FC = () => {
     const images = user.avatar_url ? [{ uri: user.avatar_url }] : [];
 
     const infoData = [
-        { label: "Langues", value: (user as any).languages || "/" },
-        { label: "Passions", value: (user as any).passions || "/" },
-        { label: "Profession", value: (user as any).profession || "/" },
-        { label: "Etudes", value: (user as any).studies || "/" },
-        { label: "Ecole", value: (user as any).school || "/" },
-        { label: "Alcool", value: (user as any).alcohol || "/" },
-        { label: "Tabac", value: (user as any).tobacco || "/" },
-        { label: "Alimentation", value: (user as any).food_preference || "/" },
-        { label: "Enfants", value: (user as any).children || "/" },
+        { label: "Langues", value: user.languages || "/" },
+        { label: "Passions", value: user.passions || "/" },
+        { label: "Profession", value: user.profession || "/" },
+        { label: "Études", value: user.studies || "/" },
+        { label: "École", value: user.school || "/" },
+        { label: "Alcool", value: user.alcohol || "/" },
+        { label: "Tabac", value: user.tobacco || "/" },
+        { label: "Alimentation", value: user.food_preference || "/" },
+        { label: "Enfants", value: user.children || "/" },
     ];
 
     return (
@@ -106,8 +119,9 @@ const ProfilPerson: React.FC = () => {
                             </View>
                             <View className="flex-row ml-3">
                                 {Array(5).fill(0).map((_, index) => (
-                                    <FontAwesome key={index} name="star" size={20} color="gold" />
+                                    <FontAwesome key={index} name="star" size={20} color={index < Math.round(avgRating) ? "gold" : "#D1D5DB"} />
                                 ))}
+                                <Text className="text-gray-400 text-sm ml-1">({totalEvaluations})</Text>
                             </View>
                         </View>
 
@@ -118,7 +132,7 @@ const ProfilPerson: React.FC = () => {
                             <View className="border border-[#065C98] px-4 py-2 rounded-lg">
                                 <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{age ? `${age} ans` : "—"}</Text>
                             </View>
-                            <TouchableOpacity className="border border-[#065C98] px-4 py-2 rounded-lg">
+                            <TouchableOpacity onPress={() => Toast.show({ type: "info", text1: "Fonctionnalité bientôt disponible", position: "top", topOffset: 60 })} className="border border-[#065C98] px-4 py-2 rounded-lg">
                                 <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>Activités</Text>
                             </TouchableOpacity>
                         </View>
@@ -152,10 +166,10 @@ const ProfilPerson: React.FC = () => {
                                 <Text className={`${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"} font-medium`}>Mes amis</Text>
                             </TouchableOpacity>
                             <View className="flex-row items-center space-x-3">
-                                <TouchableOpacity><Image source={require("../../img/instagram-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8 mr-2" /></TouchableOpacity>
-                                <TouchableOpacity><Image source={require("../../img/tiktok-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" /></TouchableOpacity>
-                                <TouchableOpacity><Image source={require("../../img/facebook-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-7 w-7 mr-1" /></TouchableOpacity>
-                                <TouchableOpacity><Image source={require("../../img/snapchat-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => user?.instagram && Linking.openURL(`https://instagram.com/${user.instagram}`)} style={{ opacity: user?.instagram ? 1 : 0.3 }}><Image source={require("../../img/instagram-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8 mr-2" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => user?.tiktok && Linking.openURL(`https://tiktok.com/@${user.tiktok}`)} style={{ opacity: user?.tiktok ? 1 : 0.3 }}><Image source={require("../../img/tiktok-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => user?.facebook && Linking.openURL(`https://facebook.com/${user.facebook}`)} style={{ opacity: user?.facebook ? 1 : 0.3 }}><Image source={require("../../img/facebook-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-7 w-7 mr-1" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => user?.snapchat && Linking.openURL(`https://snapchat.com/add/${user.snapchat}`)} style={{ opacity: user?.snapchat ? 1 : 0.3 }}><Image source={require("../../img/snapchat-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" /></TouchableOpacity>
                             </View>
                         </View>
                     </View>

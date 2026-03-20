@@ -9,6 +9,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../config';
 import { authService } from '../services/auth';
+import { useTheme } from '../../screens/ThemeContext';
 import type { User, LoginData, RegisterData } from '../types';
 
 interface AuthContextType {
@@ -29,6 +30,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { setDarkMode } = useTheme();
+
+  // Sync dark mode preference from user profile
+  useEffect(() => {
+    if (user?.dark_mode !== undefined) {
+      setDarkMode(user.dark_mode);
+    }
+  }, [user?.dark_mode, setDarkMode]);
 
   // On app start, check if we have a saved session
   useEffect(() => {

@@ -1,10 +1,11 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, Image, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Image, TextInput, ActivityIndicator } from "react-native";
 import { useTheme } from "../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { activityService } from "../../src/services/activities";
+import Toast from "react-native-toast-message";
 
 type RootStackParamList = {
     ProfilPersonOverview: { userId: number };
@@ -39,9 +40,9 @@ const ParticipationPendingHost: React.FC = () => {
         setActionLoading(userId);
         try {
             await activityService.handleParticipation(activityId, userId, action);
-            Alert.alert("Succès", action === "accept" ? "Participation acceptée" : "Participation refusée");
+            Toast.show({ type: 'success', text1: action === "accept" ? "Participation acceptée" : "Participation refusée", position: 'top', topOffset: 60 });
             fetchParticipants();
-        } catch (e) { Alert.alert("Erreur", "Action impossible"); }
+        } catch (e) { Toast.show({ type: 'error', text1: 'Erreur', text2: 'Action impossible', position: 'top', topOffset: 60 }); }
         finally { setActionLoading(null); }
     };
 

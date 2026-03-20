@@ -1,10 +1,11 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, Image, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, Image, TextInput, ActivityIndicator } from "react-native";
 import { useTheme } from "../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { activityService } from "../../src/services/activities";
+import Toast from "react-native-toast-message";
 
 type RootStackParamList = {
     ProfilPersonOverview: { userId: number };
@@ -36,21 +37,22 @@ const ParticipationValidatedHost: React.FC = () => {
 
     useEffect(() => { fetchParticipants(); }, [fetchParticipants]);
 
+    const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
+
     const handleRemove = async (userId: number) => {
-        Alert.alert("Retirer", "Voulez-vous retirer ce participant ?", [
-            { text: "Annuler", style: "cancel" },
-            {
-                text: "Retirer", style: "destructive", onPress: async () => {
-                    setActionLoading(userId);
-                    try {
-                        await activityService.handleParticipation(activityId, userId, "reject");
-                        Alert.alert("Succès", "Participant retiré");
-                        fetchParticipants();
-                    } catch (e) { Alert.alert("Erreur", "Action impossible"); }
-                    finally { setActionLoading(null); }
-                }
-            }
-        ]);
+        if (confirmRemoveId !== userId) {
+            setConfirmRemoveId(userId);
+            return;
+        }
+        setConfirmRemoveId(null);
+        setActionLoading(userId);
+        try {
+            await activityService.handleParticipation(activityId, userId, "reject");
+            Toast.show({ type: 'success', text1: 'Participant retiré', position: 'top', topOffset: 60 });
+            fetchParticipants();
+        } catch (e) {
+            Toast.show({ type: 'error', text1: 'Erreur', text2: 'Action impossible', position: 'top', topOffset: 60 });
+        } finally { setActionLoading(null); }
     };
 
     const filtered = participants.filter(p => {
@@ -105,7 +107,7 @@ const ParticipationValidatedHost: React.FC = () => {
                                     <View className="ml-2">
                                         <View className="flex-row mt-4">
                                             <Text className={`${isDarkMode ? "text-white" : "text-black"} font-medium`}>{displayName}</Text>
-                                            {isHost && <Text className="ml-1 relative bottom-2">Hôte</Text>}
+                                            {isHost && <Text className={`ml-1 relative bottom-2 ${isDarkMode ? 'text-white' : 'text-black'}`}>Hôte</Text>}
                                             {typeLabel && (
                                                 <Text className={`font-medium ml-1 ${typeLabel === "Pro" ? "text-[#8260D2]" : "text-[#E8A838]"}`}>{typeLabel}</Text>
                                             )}
@@ -120,7 +122,7 @@ const ParticipationValidatedHost: React.FC = () => {
                                         onPress={() => handleRemove(user.id)}
                                         className="bg-red-500 px-3 py-2 rounded-full">
                                         <Text className="text-white text-sm font-medium">
-                                            {actionLoading === user.id ? "..." : "Retirer"}
+                                            {actionLoading === user.id ? "..." : confirmRemoveId === user.id ? "Confirmer" : "Retirer"}
                                         </Text>
                                     </TouchableOpacity>
                                 )}

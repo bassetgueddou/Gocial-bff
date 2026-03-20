@@ -1,5 +1,5 @@
 import api from './api';
-import type { Conversation, Message } from '../types';
+import type { Conversation, Message, MessageRequest, ConversationPartner } from '../types';
 
 interface ConversationsResponse {
   conversations: Conversation[];
@@ -10,7 +10,7 @@ interface ConversationsResponse {
 }
 
 interface MessagesResponse {
-  partner: any;
+  partner: ConversationPartner;
   messages: Array<{
     id: number;
     content: string;
@@ -31,7 +31,7 @@ export const messageService = {
     return response.data;
   },
 
-  getRequests: async (): Promise<{ requests: any[] }> => {
+  getRequests: async (): Promise<{ requests: MessageRequest[] }> => {
     const response = await api.get('/api/messages/requests');
     return response.data;
   },
@@ -45,7 +45,7 @@ export const messageService = {
     recipientId: number,
     content: string,
     type = 'text',
-  ): Promise<{ message: string; data: any }> => {
+  ): Promise<{ message: string; data: Message }> => {
     const response = await api.post(`/api/messages/send/${recipientId}`, {
       content,
       type,

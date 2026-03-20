@@ -13,7 +13,8 @@ type SocialLink = {
     label: string;
     value: string;
     setValue: React.Dispatch<React.SetStateAction<string>>;
-    icon: any;
+    icon?: any;
+    iconName?: string;
     field: string;
 };
 
@@ -27,18 +28,24 @@ const EditSocialNetworks: React.FC = () => {
     const [tiktok, setTiktok] = useState(user?.tiktok || "");
     const [facebook, setFacebook] = useState(user?.facebook || "");
     const [snapchat, setSnapchat] = useState(user?.snapchat || "");
+    const [twitter, setTwitter] = useState(user?.twitter || "");
+    const [linkedin, setLinkedin] = useState(user?.linkedin || "");
+    const [youtube, setYoutube] = useState(user?.youtube || "");
 
     const socialLinks: SocialLink[] = [
         { label: "Liens Instagram", value: instagram, setValue: setInstagram, icon: require("../../img/instagram-social.png"), field: "instagram" },
-        { label: "Liens Tiktok", value: tiktok, setValue: setTiktok, icon: require("../../img/tiktok-social.png"), field: "tiktok" },
+        { label: "Liens TikTok", value: tiktok, setValue: setTiktok, icon: require("../../img/tiktok-social.png"), field: "tiktok" },
         { label: "Liens Facebook", value: facebook, setValue: setFacebook, icon: require("../../img/facebook-social.png"), field: "facebook" },
         { label: "Liens Snapchat", value: snapchat, setValue: setSnapchat, icon: require("../../img/snapchat-social.png"), field: "snapchat" },
+        { label: "Liens Twitter / X", value: twitter, setValue: setTwitter, iconName: "alternate-email", field: "twitter" },
+        { label: "Liens LinkedIn", value: linkedin, setValue: setLinkedin, iconName: "work", field: "linkedin" },
+        { label: "Liens YouTube", value: youtube, setValue: setYoutube, iconName: "play-circle-outline", field: "youtube" },
     ];
 
     const handleSave = async () => {
         try {
             setSaving(true);
-            await userService.updateProfile({ instagram, tiktok, facebook, snapchat } as any);
+            await userService.updateProfile({ instagram, tiktok, facebook, snapchat, twitter, linkedin, youtube });
             await refreshUser();
             Toast.show({ type: "success", text1: "Réseaux sociaux mis à jour" });
             navigation.goBack();
@@ -49,11 +56,28 @@ const EditSocialNetworks: React.FC = () => {
         }
     };
 
-    const renderTextInput = ({ label, value, setValue, icon }: SocialLink) => (
+    const getPlaceholder = (field: string): string => {
+        switch (field) {
+            case "instagram": return "Entrez votre lien Instagram...";
+            case "tiktok": return "Entrez votre lien TikTok...";
+            case "facebook": return "Entrez votre lien Facebook...";
+            case "snapchat": return "Entrez votre pseudo Snapchat...";
+            case "twitter": return "Entrez votre lien Twitter / X...";
+            case "linkedin": return "Entrez votre lien LinkedIn...";
+            case "youtube": return "Entrez votre lien YouTube...";
+            default: return "Entrez votre lien...";
+        }
+    };
+
+    const renderTextInput = ({ label, value, setValue, icon, iconName, field }: SocialLink) => (
         <View key={label} className="mt-2 w-full">
             <View className="flex-row items-center px-4 mb-2">
                 <Text className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-black"}`}>{label}</Text>
-                <Image source={icon} style={{ tintColor: isDarkMode ? "white" : "black" }} className="w-6 h-6 ml-2" resizeMode="contain" />
+                {icon ? (
+                    <Image source={icon} style={{ tintColor: isDarkMode ? "white" : "black" }} className="w-6 h-6 ml-2" resizeMode="contain" />
+                ) : iconName ? (
+                    <MaterialIcons name={iconName} size={24} color={isDarkMode ? "white" : "black"} style={{ marginLeft: 8 }} />
+                ) : null}
             </View>
             <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"} py-4 px-6 rounded-lg w-full`}>
                 <TextInput
@@ -62,6 +86,8 @@ const EditSocialNetworks: React.FC = () => {
                     onChangeText={setValue}
                     keyboardType="url"
                     autoCapitalize="none"
+                    placeholder={getPlaceholder(field)}
+                    placeholderTextColor="#ABABAB"
                 />
             </View>
         </View>

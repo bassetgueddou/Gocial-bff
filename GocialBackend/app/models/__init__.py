@@ -8,7 +8,7 @@ Import everything here so you can do:
 from app.models.base import CRUDMixin, PkModel, reference_col
 from app.models.user import User, Role
 from app.models.activity import Activity, Participation, ActivityLike
-from app.models.social import Friendship, Message, Notification, Report
+from app.models.social import Friendship, Message, Notification, Report, Evaluation
 
 # What gets exported when you do "from app.models import *"
 __all__ = [
@@ -28,4 +28,5 @@ __all__ = [
     'Message',
     'Notification',
     'Report',
+    'Evaluation',
 ]

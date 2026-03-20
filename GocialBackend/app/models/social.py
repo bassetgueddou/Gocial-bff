@@ -7,6 +7,7 @@ People wanna meet friends, chat, and stay in the loop.
 
 from datetime import datetime
 from app import db
+from app.models.base import PkModel
 
 
 class Friendship(db.Model):
@@ -230,6 +231,51 @@ class Notification(db.Model):
             }
         
         return data
+
+
+class Evaluation(PkModel):
+    """
+    Post-activity evaluation.
+
+    After an activity is completed, participants and the host can rate
+    each other. This helps build trust in the community.
+
+    Rating: 1-5 stars
+    was_present: whether the evaluated person actually showed up
+    """
+    __tablename__ = 'evaluations'
+
+    activity_id = db.Column(db.Integer, db.ForeignKey('activities.id'), nullable=False, index=True)
+    evaluator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    evaluated_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5
+    was_present = db.Column(db.Boolean, default=True)
+    comment = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    activity = db.relationship('Activity', backref='evaluations')
+    evaluator = db.relationship('User', foreign_keys=[evaluator_id], backref='evaluations_given')
+    evaluated = db.relationship('User', foreign_keys=[evaluated_id], backref='evaluations_received')
+
+    # Contrainte unique : un évaluateur ne peut évaluer qu'une fois par activité et par personne
+    __table_args__ = (
+        db.UniqueConstraint('activity_id', 'evaluator_id', 'evaluated_id', name='uq_evaluation'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'activity_id': self.activity_id,
+            'evaluator_id': self.evaluator_id,
+            'evaluated_id': self.evaluated_id,
+            'rating': self.rating,
+            'was_present': self.was_present,
+            'comment': self.comment,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'evaluator_pseudo': self.evaluator.pseudo if self.evaluator else None,
+            'evaluated_pseudo': self.evaluated.pseudo if self.evaluated else None,
+        }
 
 
 class Report(db.Model):

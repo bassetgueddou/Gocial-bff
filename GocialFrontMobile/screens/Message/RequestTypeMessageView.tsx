@@ -67,7 +67,7 @@ const RequestTypeMessageView: React.FC<TypeMessageViewProps> = ({ onClose, sende
     };
 
     const handleSubmit = () => {
-        console.log("Raison du signalement:", reason);
+        __DEV__ && console.log("Raison du signalement:", reason);
     };
 
     const displayMessages = messages.map((m: any) => ({

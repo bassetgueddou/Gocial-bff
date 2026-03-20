@@ -8,22 +8,30 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { userService } from "../../src/services/users";
 import Toast from "react-native-toast-message";
 
+const MAX_BIO_LENGTH = 500;
+
 const EditAbout: React.FC = () => {
-    const { user, updateUser } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [description, setDescription] = useState(user?.bio || "");
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
     const { isDarkMode } = useTheme();
 
+    const handleChangeText = (text: string) => {
+        if (text.length <= MAX_BIO_LENGTH) {
+            setDescription(text);
+        }
+    };
+
     const handleSave = async () => {
         setLoading(true);
         try {
-            const data = await userService.updateProfile({ bio: description });
-            if (updateUser) updateUser({ ...user, bio: description });
-            Toast.show({ type: "success", text1: "Profil mis a jour", position: "top", topOffset: 60 });
+            await userService.updateProfile({ bio: description });
+            await refreshUser();
+            Toast.show({ type: "success", text1: "Profil mis à jour", position: "top", topOffset: 60 });
             navigation.goBack();
         } catch {
-            Toast.show({ type: "error", text1: "Erreur", text2: "Impossible de mettre a jour.", position: "top", topOffset: 60 });
+            Toast.show({ type: "error", text1: "Erreur", text2: "Impossible de mettre à jour.", position: "top", topOffset: 60 });
         } finally {
             setLoading(false);
         }
@@ -36,7 +44,7 @@ const EditAbout: React.FC = () => {
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <MaterialIcons name="arrow-back-ios" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
-                    <Text className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>A Propos</Text>
+                    <Text className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-black"}`}>À Propos</Text>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <MaterialIcons name="close" size={25} color={isDarkMode ? "white" : "black"} />
                     </TouchableOpacity>
@@ -47,9 +55,16 @@ const EditAbout: React.FC = () => {
                     <TextInput
                         className={`border p-3 rounded-lg ${isDarkMode ? "bg-[#1D1E20] border-white border-[0.3px] text-white" : "bg-white border-[#065C98] text-black"} h-40`}
                         value={description}
-                        onChangeText={setDescription}
+                        onChangeText={handleChangeText}
                         multiline
+                        placeholder="Décrivez-vous en quelques mots..."
+                        placeholderTextColor="#ABABAB"
+                        textAlignVertical="top"
+                        maxLength={MAX_BIO_LENGTH}
                     />
+                    <Text className={`text-right mt-2 text-sm ${description.length >= MAX_BIO_LENGTH ? "text-[#FF4D4D]" : isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                        {description.length}/{MAX_BIO_LENGTH}
+                    </Text>
                 </View>
             </KeyboardAvoidingView>
             <View className={`absolute bottom-6 left-0 right-0 ${isDarkMode ? "bg-black" : "bg-white"} p-4 flex-row justify-between`}>

@@ -11,6 +11,7 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
+import { useFilters } from "../../src/contexts/FilterContext";
 
 const { width, height } = Dimensions.get("window");
 
@@ -24,12 +25,13 @@ const participantTypes: string[] = [
     "Hommes",
     "Femmes",
     "Familles",
-    "Etudiants",
+    "Étudiants",
     "Célibataires",
 ];
 
 const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose }) => {
     const { isDarkMode } = useTheme();
+    const { setGirlsOnly, setFreeOnly, setHostType, resetFilters } = useFilters();
     const [selectedType, setSelectedType] = useState<string>("Tout le monde");
     const [onlyFree, setOnlyFree] = useState<boolean>(false);
     const [onlyPro, setOnlyPro] = useState<boolean>(false);
@@ -134,12 +136,35 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose }) => {
 
                         {/* Boutons en bas */}
                         <View className={`absolute bottom-6 left-0 right-0 ${isDarkMode ? "bg-black" : "bg-white"} p-4 flex-row justify-between`}>
-                            <TouchableOpacity onPress={onClose} className={`border  
+                            <TouchableOpacity onPress={() => {
+                                setSelectedType("Tout le monde");
+                                setOnlyFree(false);
+                                setOnlyPro(false);
+                                setOnlyAsso(false);
+                                setOnlyIndividuals(true);
+                                resetFilters();
+                                onClose();
+                            }} className={`border
                                 px-5 py-2 rounded-lg ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"}`}>
                                 <Text className={`text-base ${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"}`}>Réinitialiser</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={onClose} className={`px-5 py-2 rounded-lg flex-row items-center justify-center ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"}`}>
+                            <TouchableOpacity onPress={() => {
+                                // Apply girls-only if "Femmes" selected
+                                setGirlsOnly(selectedType === "Femmes");
+                                setFreeOnly(onlyFree);
+                                // Determine host type filter
+                                if (onlyPro) {
+                                    setHostType('pro');
+                                } else if (onlyAsso) {
+                                    setHostType('asso');
+                                } else if (onlyIndividuals) {
+                                    setHostType('person');
+                                } else {
+                                    setHostType('all');
+                                }
+                                onClose();
+                            }} className={`px-5 py-2 rounded-lg flex-row items-center justify-center ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"}`}>
                                 <MaterialIcons name="search" size={20} color="white" />
                                 <Text className="text-white text-base">Rechercher</Text>
                             </TouchableOpacity>

@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { useColorScheme } from "react-native";
 
 type ThemeContextType = {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  setDarkMode: (value: boolean) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -12,10 +13,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const systemColorScheme = useColorScheme(); // Détecte le mode du système (iOS/Android)
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === "dark");
 
-  const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+  const toggleDarkMode = useCallback(() => setIsDarkMode((prev) => !prev), []);
+
+  const setDarkMode = useCallback((value: boolean) => {
+    setIsDarkMode(value);
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, setDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );

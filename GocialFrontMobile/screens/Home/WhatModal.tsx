@@ -16,6 +16,7 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
+import { useFilters } from "../../src/contexts/FilterContext";
 
 const { width, height } = Dimensions.get("window");
 
@@ -117,6 +118,7 @@ interface WhatModalProps {
 }
 
 const WhatModal: React.FC<WhatModalProps> = ({ visible, onClose }) => {
+    const { setCategory } = useFilters();
     const [selectedCategory, setSelectedCategory] = useState<string>("outings");
     const handleCategoryChange = (categoryId: string) => {
         setSelectedCategory(categoryId);
@@ -258,12 +260,25 @@ const WhatModal: React.FC<WhatModalProps> = ({ visible, onClose }) => {
 
                         {/* Boutons en bas */}
                         <View className={`absolute bottom-6 left-0 right-0 ${isDarkMode ? "bg-black" : "bg-white"} p-4 flex-row justify-between`}>
-                            <TouchableOpacity onPress={onClose} className={`border  
+                            <TouchableOpacity onPress={() => {
+                                setSelectedItems([]);
+                                setSelectAll(false);
+                                setCategory(null);
+                                onClose();
+                            }} className={`border
                                 px-5 py-2 rounded-lg ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"}`}>
                                 <Text className={`text-base ${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"}`}>Réinitialiser</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={onClose} className={`px-5 py-2 rounded-lg ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"}`}>
+                            <TouchableOpacity onPress={() => {
+                                // Send selected items as category filter
+                                if (selectedItems.length > 0) {
+                                    setCategory(selectedItems.join(','));
+                                } else {
+                                    setCategory(null);
+                                }
+                                onClose();
+                            }} className={`px-5 py-2 rounded-lg ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"}`}>
                                 <Text className="text-white text-base">Valider</Text>
                             </TouchableOpacity>
                         </View>

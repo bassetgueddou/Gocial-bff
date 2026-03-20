@@ -36,9 +36,10 @@ const FriendsPerson: React.FC = () => {
         }
         setLoading(true);
         try {
-            const type = activeTab === "proasso" ? "pro" : "person";
+            const type = activeTab === "person" ? "person" : undefined;
             const result = await userService.searchUsers(searchQuery, type);
-            setUsers(result.users || []);
+            const allUsers = result.users || [];
+            setUsers(activeTab === "proasso" ? allUsers.filter((u: any) => u.user_type === "pro" || u.user_type === "asso") : allUsers);
         } catch {
             setUsers([]);
         } finally {
@@ -116,7 +117,7 @@ const FriendsPerson: React.FC = () => {
                     <View className="flex flex-wrap flex-row justify-center p-1">
                         {users.length === 0 && searchQuery.length >= 2 ? (
                             <View className="items-center justify-center py-10 w-full">
-                                <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucun resultat</Text>
+                                <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucun résultat</Text>
                             </View>
                         ) : (
                             users.map((user, index) => (
@@ -148,7 +149,7 @@ const FriendsPerson: React.FC = () => {
                     {searchQuery.length < 2 && (
                         <View className="items-center justify-center py-10">
                             <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-                                Tapez au moins 2 caracteres pour rechercher
+                                Tapez au moins 2 caractères pour rechercher
                             </Text>
                         </View>
                     )}

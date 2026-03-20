@@ -15,8 +15,9 @@ export const useMessages = () => {
       const data = await messageService.getConversations();
       const list = Array.isArray(data) ? data : data.conversations || [];
       setConversations(list);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Impossible de charger les conversations.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      setError(axiosErr?.response?.data?.error || 'Impossible de charger les conversations.');
     } finally {
       setLoading(false);
     }
@@ -76,9 +77,10 @@ export const useConversation = (partnerId: number) => {
       setError(null);
       const data = await messageService.getMessages(partnerId);
       const list = Array.isArray(data) ? data : data.messages || [];
-      setMessages(list as any);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Impossible de charger les messages.');
+      setMessages(list as Message[]);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      setError(axiosErr?.response?.data?.error || 'Impossible de charger les messages.');
     } finally {
       setLoading(false);
     }
@@ -91,7 +93,8 @@ export const useConversation = (partnerId: number) => {
   const send = useCallback(async (content: string) => {
     try {
       const newMsg = await messageService.sendMessage(partnerId, content);
-      setMessages((prev) => [...prev, newMsg?.data ?? newMsg] as any);
+      const msg: Message = newMsg?.data ?? (newMsg as unknown as Message);
+      setMessages((prev) => [...prev, msg]);
     } catch {
       // Silent
     }

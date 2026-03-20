@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,31 +10,21 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
+import { useFilters } from "../../src/contexts/FilterContext";
 import EventCardReal from "./EventCardReal";
+import type { Activity } from "../../src/types";
 
 const { width, height } = Dimensions.get("window");
 
 interface DateModalProps {
   visible: boolean;
   onClose: () => void;
+  activities?: Activity[];
 }
 
-const DateModal: React.FC<DateModalProps> = ({ visible, onClose }) => {
+const DateModal: React.FC<DateModalProps> = ({ visible, onClose, activities = [] }) => {
   const { isDarkMode } = useTheme();
-
-  const events = [
-    {
-      id: 1,
-      title: "Soirée à B&CO",
-      date: "Mar. 25 mars. - 08:45",
-      location: "Versailles (12km)",
-      category: "Jeu",
-      image: require("../../img/billard-exemple.jpg"),
-      currentParticipants: 1,
-      totalParticipants: 10,
-      userInitials: "EL",
-    },
-  ];
+  const { setDateRange } = useFilters();
 
   const today = new Date();
   const [month, setMonth] = useState<number>(today.getMonth());
@@ -77,55 +67,29 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose }) => {
   const firstDayOffset: number = (firstDay.getDay() + 6) % 7;
   const totalDays: number = new Date(year, month + 1, 0).getDate();
 
-  // 🔍 Fonction pour extraire date d'un event (jour/mois)
-  const parseEventDate = (
-    eventDateStr: string
-  ): { day: number; month: number; year: number } | null => {
-    const regex = /(\d{1,2})\s+([a-zéû]+)\./i; // ex: "25 mars."
-    const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-
-    const match = eventDateStr.match(regex);
-    if (!match) return null;
-
-    const day = parseInt(match[1], 10);
-    const monthStr = match[2].toLowerCase();
-    const monthIndex = months.indexOf(monthStr);
-    const year = today.getFullYear(); // À adapter si tu ajoutes des années plus tard
-
-    if (day && monthIndex >= 0) {
-      return { day, month: monthIndex, year };
-    }
-
-    return null;
+  // Extraire les jours ayant une activite pour un mois donne
+  const getEventDaysForMonth = (m: number, y: number): number[] => {
+    const days = new Set<number>();
+    activities.forEach((a) => {
+      const d = new Date(a.date);
+      if (d.getMonth() === m && d.getFullYear() === y) {
+        days.add(d.getDate());
+      }
+    });
+    return Array.from(days);
   };
 
-  // 📅 Affiche un point sous les jours ayant un event
-  const getEventDaysForMonth = (month: number, year: number): number[] => {
-    return events
-      .map((event) => {
-        const parsed = parseEventDate(event.date);
-        if (
-          parsed &&
-          parsed.month === month &&
-          parsed.year === year
-        ) {
-          return parsed.day;
-        }
-        return null;
-      })
-      .filter((day): day is number => day !== null);
-  };
-
-  // 🔎 Filtre les événements du jour sélectionné
-  const filteredEvents = events.filter((event) => {
-    const parsed = parseEventDate(event.date);
-    return (
-      parsed &&
-      parsed.day === selectedDay &&
-      parsed.month === selectedMonth &&
-      parsed.year === selectedYear
-    );
-  });
+  // Filtrer les activites du jour selectionne
+  const filteredActivities = useMemo(() => {
+    return activities.filter((a) => {
+      const d = new Date(a.date);
+      return (
+        d.getDate() === selectedDay &&
+        d.getMonth() === selectedMonth &&
+        d.getFullYear() === selectedYear
+      );
+    });
+  }, [activities, selectedDay, selectedMonth, selectedYear]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -232,32 +196,51 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose }) => {
               </View>
             </View>
 
-            {/* EventCardReal */}
+            {/* Activites du jour */}
             <View className="mx-[-20px] px-0">
-              {filteredEvents.map((event) => (
-                <EventCardReal
-                  key={event.id}
-                  id={event.id}
-                  title={event.title}
-                  date={event.date}
-                  location={event.location}
-                  category={event.category}
-                  image={event.image}
-                  currentParticipants={event.currentParticipants}
-                  totalParticipants={event.totalParticipants}
-                  userInitials={event.userInitials}
-                />
-              ))}
+              {filteredActivities.length === 0 ? (
+                <Text className={`text-center mt-4 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  Aucune activité ce jour-là
+                </Text>
+              ) : (
+                filteredActivities.map((a) => {
+                  const host = a.host;
+                  const initials = host?.first_name
+                    ? `${host.first_name.charAt(0)}${(host.last_name || "").charAt(0)}`.toUpperCase()
+                    : "?";
+                  const dateObj = new Date(a.date);
+                  const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+                  const months = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
+                  const formattedDate = `${days[dateObj.getDay()]}. ${dateObj.getDate()} ${months[dateObj.getMonth()]}. - ${dateObj.getHours().toString().padStart(2, "0")}:${dateObj.getMinutes().toString().padStart(2, "0")}`;
+
+                  return (
+                    <EventCardReal
+                      key={a.id}
+                      id={a.id}
+                      title={a.title}
+                      date={formattedDate}
+                      location={a.city || a.address || ""}
+                      category={a.category}
+                      image={a.image_url ? { uri: a.image_url } : require("../../img/billard-exemple.jpg")}
+                      currentParticipants={a.current_participants}
+                      totalParticipants={a.max_participants}
+                      userInitials={initials}
+                      hostId={host?.id}
+                    />
+                  );
+                })
+              )}
             </View>
 
             {/* Boutons en bas */}
             <View className={`absolute bottom-6 left-0 right-0 ${isDarkMode ? "bg-black" : "bg-white"} p-4 flex-row justify-between`}>
               <TouchableOpacity
                 onPress={() => {
-                  // Réinitialiser la date à aujourd'hui
                   setSelectedDay(today.getDate());
                   setSelectedMonth(today.getMonth());
                   setSelectedYear(today.getFullYear());
+                  setDateRange(null, null);
+                  onClose();
                 }}
                 className={`border px-5 py-2 rounded-lg ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"
                   }`}
@@ -271,7 +254,14 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose }) => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={onClose}
+                onPress={() => {
+                  // Build YYYY-MM-DD from selected day
+                  const m = String(selectedMonth + 1).padStart(2, '0');
+                  const d = String(selectedDay).padStart(2, '0');
+                  const dateStr = `${selectedYear}-${m}-${d}`;
+                  setDateRange(dateStr, null);
+                  onClose();
+                }}
                 className={`px-5 py-2 rounded-lg flex-row items-center justify-center ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"
                   }`}
               >

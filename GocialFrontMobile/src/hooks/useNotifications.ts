@@ -16,8 +16,9 @@ export const useNotifications = () => {
       const list = Array.isArray(data) ? data : data.notifications || [];
       setNotifications(list);
       setUnreadCount(list.filter((n: Notification) => !n.is_read).length);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Impossible de charger les notifications.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      setError(axiosErr?.response?.data?.error || 'Impossible de charger les notifications.');
     } finally {
       setLoading(false);
     }

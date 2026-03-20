@@ -5,6 +5,7 @@ import { useTheme } from "../ThemeContext";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { StackNavigationProp } from "@react-navigation/stack";
+import Toast from "react-native-toast-message";
 
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
@@ -21,8 +22,19 @@ const ContactUs: React.FC = () => {
 
     const [reason, setReason] = useState("");
 
+    const handleSubmit = () => {
+        Toast.show({
+            type: "success",
+            text1: "Message envoyé !",
+            text2: "Nous reviendrons vers vous rapidement.",
+            position: "top",
+            topOffset: 60,
+        });
+        navigation.goBack();
+    };
+
     return (
-        <View className="flex-1 bg-white">
+        <View className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}>
             {/* HEADER */}
             <SafeAreaView className={`${isDarkMode ? "bg-black" : "bg-white"}`}>
                 <View className="flex-row items-center justify-between px-4 py-2">
@@ -39,13 +51,13 @@ const ContactUs: React.FC = () => {
             </SafeAreaView>
 
             <View className="flex-1 p-5">
-                <Text className={`mb-4 ${isDarkMode ? "text-white" : ""}`}>Comment pouvons-nous vous aidez ? </Text>
+                <Text className={`mb-4 ${isDarkMode ? "text-white" : ""}`}>Comment pouvons-nous vous aider ?</Text>
 
                 {/* TextInput pour la raison */}
                 <TextInput
                     value={reason}
                     onChangeText={setReason}
-                    placeholder="J’ai un question ?"
+                    placeholder="J'ai une question ?"
                     placeholderTextColor="#8B8B8B"
                     className={`${isDarkMode ? "bg-[#1D1E20] text-white" : "bg-[#F3F3F3]"} w-full h-[20rem] rounded-lg px-4 py-2 text-lg mb-6`}
                     multiline
@@ -54,10 +66,10 @@ const ContactUs: React.FC = () => {
             </View>
 
             <View className={`absolute bottom-6 left-0 right-0 ${isDarkMode ? "bg-black" : "bg-white"} p-4 flex-row justify-between`}>
-                <TouchableOpacity className={`px-8 py-3 ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#D9D9D9]"} rounded-lg`}>
+                <TouchableOpacity onPress={() => navigation.goBack()} className={`px-8 py-3 ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#D9D9D9]"} rounded-lg`}>
                     <Text className={`${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"} font-bold`}>Annuler</Text>
                 </TouchableOpacity>
-                <TouchableOpacity className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg`}>
+                <TouchableOpacity onPress={handleSubmit} className={`px-8 py-3 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#065C98]"} rounded-lg`}>
                     <Text className="text-white font-bold">Soumettre</Text>
                 </TouchableOpacity>
             </View>

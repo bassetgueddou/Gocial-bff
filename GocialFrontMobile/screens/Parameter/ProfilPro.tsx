@@ -1,11 +1,13 @@
-﻿import React, { useState, useRef } from "react";
-import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator } from "react-native";
+﻿import React, { useState, useRef, useEffect } from "react";
+import { View, Image, Text, TouchableOpacity, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, NativeScrollEvent, NativeSyntheticEvent, ActivityIndicator, Linking } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../ThemeContext";
 import { useAuth } from "../../src/contexts/AuthContext";
+import { userService } from "../../src/services/users";
+import Toast from "react-native-toast-message";
 
 const { width, height } = Dimensions.get("window");
 
@@ -15,7 +17,18 @@ const ProfilPro: React.FC = () => {
     const { user } = useAuth();
 
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [avgRating, setAvgRating] = useState(0);
+    const [totalEvaluations, setTotalEvaluations] = useState(0);
     const flatListRef = useRef<FlatList>(null);
+
+    useEffect(() => {
+        if (user?.id) {
+            userService.getUserRating(user.id).then(data => {
+                setAvgRating(data.avg_rating);
+                setTotalEvaluations(data.total_evaluations);
+            }).catch(() => {});
+        }
+    }, [user?.id]);
 
     const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const index = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -30,8 +43,8 @@ const ProfilPro: React.FC = () => {
     const images = user.avatar_url ? [{ uri: user.avatar_url }] : [];
 
     const infoData = [
-        { label: "Langues", value: (user as any).languages || "/" },
-        { label: "Secteurs d'activités", value: (user as any).profession || "/" },
+        { label: "Langues", value: user.languages || "/" },
+        { label: "Secteurs d'activités", value: user.profession || "/" },
         { label: "Horaires d'ouverture", value: "/" },
         { label: "Jours d'ouverture", value: "/" },
         { label: "Moyens de paiements", value: "/" },
@@ -89,16 +102,17 @@ const ProfilPro: React.FC = () => {
                             <Text className={`${isDarkMode ? "text-white" : "text-black"} font-bold text-xl`}>{displayName}</Text>
                             <Text className={`${isDarkMode ? "text-white" : "text-black"} text-lg font-bold`}>{pseudo}</Text>
                         </View>
-                        <View className="flex-row mt-2">
+                        <View className="flex-row items-center mt-2">
                             {Array(5).fill(0).map((_, index) => (
-                                <FontAwesome key={index} name="star" size={20} color="gold" />
+                                <FontAwesome key={index} name="star" size={20} color={index < Math.round(avgRating) ? "gold" : "#D1D5DB"} />
                             ))}
+                            <Text className="text-gray-400 text-sm ml-1">({totalEvaluations})</Text>
                         </View>
                         <View className="flex-row justify-between mt-4">
                             <View className={`border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg`}>
                                 <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>{user.city || "\u2014"}</Text>
                             </View>
-                            <TouchableOpacity className={`border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg`}>
+                            <TouchableOpacity onPress={() => Toast.show({ type: "info", text1: "Fonctionnalité bientôt disponible", position: "top", topOffset: 60 })} className={`border ${isDarkMode ? "border-[#1A6EDE]" : "border-[#065C98]"} px-4 py-2 rounded-lg`}>
                                 <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>Activités</Text>
                             </TouchableOpacity>
                         </View>
@@ -132,10 +146,10 @@ const ProfilPro: React.FC = () => {
                                 <Text className={`${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"} font-medium`}>Mes amis</Text>
                             </TouchableOpacity>
                             <View className="flex-row items-center space-x-3">
-                                <Image source={require("../../img/instagram-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8 mr-2" />
-                                <Image source={require("../../img/tiktok-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
-                                <Image source={require("../../img/facebook-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-7 w-7 mr-1" />
-                                <Image source={require("../../img/snapchat-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" />
+                                <TouchableOpacity onPress={() => user?.instagram && Linking.openURL(`https://instagram.com/${user.instagram}`)} style={{ opacity: user?.instagram ? 1 : 0.3 }}><Image source={require("../../img/instagram-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8 mr-2" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => user?.tiktok && Linking.openURL(`https://tiktok.com/@${user.tiktok}`)} style={{ opacity: user?.tiktok ? 1 : 0.3 }}><Image source={require("../../img/tiktok-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => user?.facebook && Linking.openURL(`https://facebook.com/${user.facebook}`)} style={{ opacity: user?.facebook ? 1 : 0.3 }}><Image source={require("../../img/facebook-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-7 w-7 mr-1" /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => user?.snapchat && Linking.openURL(`https://snapchat.com/add/${user.snapchat}`)} style={{ opacity: user?.snapchat ? 1 : 0.3 }}><Image source={require("../../img/snapchat-social.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className="h-8 w-8" /></TouchableOpacity>
                             </View>
                         </View>
                     </View>

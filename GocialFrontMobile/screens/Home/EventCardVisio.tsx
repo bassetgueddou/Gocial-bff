@@ -83,7 +83,7 @@ const EventCardVisio: React.FC<EventCardProps> = ({
             </View>
 
             {/* Participants and Likes alignés à droite */}
-            <View className={`flex-row justify-end items-center gap-1 absolute bottom-2 left-[19rem]`}>
+            <View className={`flex-row justify-end items-center gap-1 mt-2 pr-1`}>
                 <View className={`flex-row items-center`}>
                     <Image source={require("../../img/people.png")} style={{ tintColor: isDarkMode ? "white" : "black" }} className={`${isDarkMode ? "relative top-[0.1rem]" : ""} h-4 w-4`} />
                     <Text className={`text-xs ml-1 ${isDarkMode ? "text-white" : "text-black"}`}>{currentParticipants}/{totalParticipants}</Text>

@@ -9,6 +9,12 @@ Desktop.ini
 *.swp
 *.swo
 
+# ============ Claude ============
+CLAUDE.md
+.claude/
+PROMPT_AGENT_TEAMS.md
+AGENT_STATUS.md
+
 # ============ Python ============
 __pycache__/
 *.pyc
@@ -37,7 +43,8 @@ node_modules/
 *.ipa
 *.jsbundle
 
-CLAUDE.md
+# ============ Docs ============
 DB_SCHEMA.md
-PROMPT_AGENT_TEAMS.md
-.claude/
+API_SPECS.md
+QA_REPORT.md
+BACKLOG.md

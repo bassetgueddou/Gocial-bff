@@ -74,8 +74,8 @@ const MyFriends: React.FC = () => {
                 await removeFriend(selectedId);
                 Toast.show({
                     type: "success",
-                    text1: "Ami supprime",
-                    text2: `${selectedName} a bien ete supprime(e) de vos amis.`,
+                    text1: "Ami supprimé",
+                    text2: `${selectedName} a bien été supprimé(e) de vos amis.`,
                     visibilityTime: 2000,
                     position: "top",
                     topOffset: 60,
@@ -84,8 +84,8 @@ const MyFriends: React.FC = () => {
                 await unblockUser(selectedId);
                 Toast.show({
                     type: "success",
-                    text1: "Utilisateur debloque",
-                    text2: `${selectedName} a bien ete debloque(e).`,
+                    text1: "Utilisateur débloqué",
+                    text2: `${selectedName} a bien été débloqué(e).`,
                     visibilityTime: 2000,
                     position: "top",
                     topOffset: 60,
@@ -130,7 +130,7 @@ const MyFriends: React.FC = () => {
                     <Text className={`text-lg ${activeTab === "proasso" ? "text-white" : isDarkMode ? "text-white" : "text-black"}`}>Pro/Asso</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setActiveTab("blocked")} className={`flex-1 py-2 items-center ${activeTab === "blocked" ? "bg-[#065C98]" : isDarkMode ? "bg-[#1D1E20]" : ""}`}>
-                    <Text className={`text-lg ${activeTab === "blocked" ? "text-white" : isDarkMode ? "text-white" : "text-black"}`}>Bloque</Text>
+                    <Text className={`text-lg ${activeTab === "blocked" ? "text-white" : isDarkMode ? "text-white" : "text-black"}`}>Bloqués</Text>
                 </TouchableOpacity>
             </View>
 
@@ -196,7 +196,7 @@ const MyFriends: React.FC = () => {
                 )}
                 ListEmptyComponent={
                     <View className="items-center justify-center py-10">
-                        <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucun resultat</Text>
+                        <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Aucun résultat</Text>
                     </View>
                 }
             />

@@ -9,11 +9,20 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
 from math import radians, cos, sin, asin, sqrt
+import os
+import uuid
+from werkzeug.utils import secure_filename
 
 from app import db
-from app.models import User, Activity, Participation, ActivityLike, Friendship
+from app.models import User, Activity, Participation, ActivityLike, Friendship, Evaluation
 
 activities_bp = Blueprint('activities', __name__)
+
+
+def allowed_file(filename):
+    """Check if file extension is allowed for uploads."""
+    allowed = current_app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'gif', 'webp'})
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed
 
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -46,6 +55,8 @@ def get_activities():
     - category: activity category
     - date: specific date (YYYY-MM-DD)
     - lat, lng, radius: location-based filter (km)
+    - search: text search on title and description
+    - host_type: filter by host user type (person, pro, asso)
     - girls_only: filter women-only activities
     - free_only: show only free activities
     - page, per_page: pagination
@@ -62,6 +73,8 @@ def get_activities():
     lng = request.args.get('lng', type=float)
     radius = request.args.get('radius', 50, type=float)  # default 50km
     
+    search = request.args.get('search', '').strip()
+
     girls_only = request.args.get('girls_only', 'false').lower() == 'true'
     free_only = request.args.get('free_only', 'false').lower() == 'true'
     
@@ -78,10 +91,27 @@ def get_activities():
     if activity_type in ('real', 'visio'):
         query = query.filter(Activity.activity_type == activity_type)
     
-    # Category filter
+    # Category filter (supports comma-separated values, e.g. "accrobranche,bowling")
     if category:
-        query = query.filter(Activity.category == category)
-    
+        if ',' in category:
+            categories = [c.strip() for c in category.split(',') if c.strip()]
+            query = query.filter(Activity.category.in_(categories))
+        else:
+            query = query.filter(Activity.category == category)
+
+    # Host type filter (person, pro, asso)
+    host_type = request.args.get('host_type', '').strip()
+    if host_type:
+        query = query.join(User, Activity.host_id == User.id).filter(User.user_type == host_type)
+
+    # Text search on title and description
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.filter(
+            Activity.title.ilike(search_pattern) |
+            Activity.description.ilike(search_pattern)
+        )
+
     # Date filter
     if date_str:
         try:
@@ -328,6 +358,10 @@ def create_activity():
         visio_link = data.get('visio_link', '') or data.get('visio_url', '')
         activity.visio_url = visio_link.strip() or None
 
+    # Image URL (if frontend uploaded the image before creating the activity)
+    if data.get('image_url'):
+        activity.image_url = data['image_url'].strip()
+
     try:
         db.session.add(activity)
         db.session.commit()
@@ -412,6 +446,83 @@ def update_activity(activity_id):
     return jsonify({
         'message': 'Activité mise à jour',
         'activity': activity.to_dict(viewer_id=user_id)
+    }), 200
+
+
+# ---------------------------------------------------------------------
+# Upload activity image
+# ---------------------------------------------------------------------
+
+@activities_bp.route('/<int:activity_id>/image', methods=['POST'])
+@jwt_required()
+def upload_activity_image(activity_id):
+    """
+    Upload an image for an activity.
+
+    Only the host can upload an image.
+    Accepts multipart/form-data with 'image' field.
+    """
+    user_id = int(get_jwt_identity())
+
+    activity = Activity.query.get(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activité introuvable'}), 404
+
+    if activity.host_id != user_id:
+        return jsonify({'error': 'Non autorisé'}), 403
+
+    if 'image' not in request.files:
+        return jsonify({'error': 'Aucun fichier envoyé'}), 400
+
+    file = request.files['image']
+
+    if file.filename == '':
+        return jsonify({'error': 'Aucun fichier sélectionné'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Type de fichier non autorisé (JPEG, PNG, GIF, WebP acceptés)'}), 400
+
+    # Check file size (max 16 MB) — Flask MAX_CONTENT_LENGTH handles this
+    # at the request level, but we double-check here for safety
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    max_size = 16 * 1024 * 1024  # 16 MB
+    if file_size > max_size:
+        return jsonify({'error': 'Le fichier est trop volumineux (max 16 Mo)'}), 400
+
+    # Generate a UUID-based filename
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f'{uuid.uuid4().hex}.{ext}'
+    filename = secure_filename(filename)
+
+    # Get upload folder
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    activities_folder = os.path.join(upload_folder, 'activities')
+
+    # Create folder if it doesn't exist
+    os.makedirs(activities_folder, exist_ok=True)
+
+    # Save file
+    filepath = os.path.join(activities_folder, filename)
+    file.save(filepath)
+
+    # Update activity image URL
+    activity.image_url = f'/uploads/activities/{filename}'
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Activity image upload failed: {e}')
+        # Clean up saved file on DB error
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return jsonify({'error': "Échec de la mise à jour de l'image"}), 500
+
+    return jsonify({
+        'message': 'Image mise à jour',
+        'image_url': activity.image_url
     }), 200
 
 
@@ -830,3 +941,139 @@ def get_my_participations():
         'pages': pagination.pages,
         'current_page': page,
     }), 200
+
+
+# ---------------------------------------------------------------------
+# Submit evaluations for an activity
+# ---------------------------------------------------------------------
+
+@activities_bp.route('/<int:activity_id>/evaluate', methods=['POST'])
+@jwt_required()
+def evaluate_activity(activity_id):
+    """
+    Submit evaluations for participants after an activity is completed.
+
+    Body: { "evaluations": [{ "user_id": 5, "rating": 4, "was_present": true, "comment": "Super !" }] }
+    """
+    current_user_id = int(get_jwt_identity())
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'Aucune donnée fournie'}), 400
+
+    activity = Activity.query.get(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activité introuvable'}), 404
+
+    # Vérifier que l'activité est terminée (status completed ou date passée)
+    is_completed = activity.status == 'completed' or (activity.date and activity.date < datetime.utcnow())
+    if not is_completed:
+        return jsonify({'error': "L'activité n'est pas encore terminée"}), 400
+
+    # Vérifier que l'utilisateur est l'hôte ou un participant validé
+    is_host = activity.host_id == current_user_id
+    is_participant = False
+    if not is_host:
+        participation = Participation.query.filter_by(
+            activity_id=activity_id,
+            user_id=current_user_id,
+            status='validated'
+        ).first()
+        is_participant = participation is not None
+
+    if not is_host and not is_participant:
+        return jsonify({'error': "Vous devez être l'hôte ou un participant validé pour évaluer"}), 403
+
+    evaluations_data = data.get('evaluations', [])
+    if not evaluations_data:
+        return jsonify({'error': 'Aucune évaluation fournie'}), 400
+
+    # Récupérer les IDs des participants validés + l'hôte (les personnes évaluables)
+    validated_participations = Participation.query.filter_by(
+        activity_id=activity_id,
+        status='validated'
+    ).all()
+    valid_user_ids = {p.user_id for p in validated_participations}
+    valid_user_ids.add(activity.host_id)
+
+    created_evaluations = []
+
+    for eval_data in evaluations_data:
+        evaluated_id = eval_data.get('user_id')
+        rating = eval_data.get('rating')
+        was_present = eval_data.get('was_present', True)
+        comment = eval_data.get('comment', '').strip() if eval_data.get('comment') else None
+
+        # Validations
+        if not evaluated_id:
+            return jsonify({'error': "L'identifiant de l'utilisateur évalué est requis"}), 400
+
+        if evaluated_id == current_user_id:
+            return jsonify({'error': 'Vous ne pouvez pas vous évaluer vous-même'}), 400
+
+        if evaluated_id not in valid_user_ids:
+            return jsonify({'error': f"L'utilisateur {evaluated_id} ne participe pas à cette activité"}), 400
+
+        if rating is None or not isinstance(rating, int) or rating < 1 or rating > 5:
+            return jsonify({'error': 'La note doit être un entier entre 1 et 5'}), 400
+
+        # Vérifier qu'on n'a pas déjà évalué cette personne pour cette activité
+        existing = Evaluation.query.filter_by(
+            activity_id=activity_id,
+            evaluator_id=current_user_id,
+            evaluated_id=evaluated_id
+        ).first()
+
+        if existing:
+            return jsonify({'error': f"Vous avez déjà évalué l'utilisateur {evaluated_id} pour cette activité"}), 409
+
+        evaluation = Evaluation(
+            activity_id=activity_id,
+            evaluator_id=current_user_id,
+            evaluated_id=evaluated_id,
+            rating=rating,
+            was_present=was_present,
+            comment=comment
+        )
+        db.session.add(evaluation)
+        created_evaluations.append(evaluation)
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Évaluation échouée: {e}')
+        return jsonify({'error': "Erreur lors de l'enregistrement des évaluations"}), 500
+
+    return jsonify({
+        'message': 'Évaluations enregistrées',
+        'evaluations': [ev.to_dict() for ev in created_evaluations]
+    }), 201
+
+
+# ---------------------------------------------------------------------
+# Get evaluations for an activity
+# ---------------------------------------------------------------------
+
+@activities_bp.route('/<int:activity_id>/evaluations', methods=['GET'])
+@jwt_required()
+def get_activity_evaluations(activity_id):
+    """
+    Get all evaluations for an activity.
+    """
+    int(get_jwt_identity())  # Auth check
+
+    activity = Activity.query.get(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activité introuvable'}), 404
+
+    evaluations = Evaluation.query.filter_by(activity_id=activity_id).order_by(
+        Evaluation.created_at.desc()
+    ).all()
+
+    return jsonify({
+        'evaluations': [ev.to_dict() for ev in evaluations],
+        'total': len(evaluations)
+    }), 200
+
+

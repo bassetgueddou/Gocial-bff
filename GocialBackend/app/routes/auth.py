@@ -36,16 +36,19 @@ def validate_password(password):
     Password requirements:
     - At least 8 characters
     - Has a number
-    - Has uppercase and lowercase
+    - Has uppercase
+    - Has lowercase and special characters
     """
     if len(password) < 8:
         return False, "Le mot de passe doit contenir au moins 8 caractères"
     if not any(c.isdigit() for c in password):
-        return False, "Le mot de passe doit contenir au moins un chiffre"
+        return False, "Le mot de passe doit contenir au moins 1 chiffre"
     if not any(c.isupper() for c in password):
-        return False, "Le mot de passe doit contenir au moins une majuscule"
+        return False, "Le mot de passe doit contenir au moins 1 majuscule"
     if not any(c.islower() for c in password):
-        return False, "Le mot de passe doit contenir au moins une minuscule"
+        return False, "Le mot de passe doit contenir au moins 1 minuscule"
+    if not any(not c.isalnum() for c in password):
+        return False, "Le mot de passe doit contenir au moins 1 caractère spécial"
     return True, None
 
 
@@ -124,7 +127,7 @@ def register():
             if age < 13:
                 return jsonify({'error': 'Vous devez avoir au moins 13 ans'}), 400
         except ValueError:
-            return jsonify({'error': 'Format de date invalide (JJ/MM/AAAA attendu)'}), 400
+            return jsonify({'error': 'Format de date invalide (AAAA-MM-JJ attendu)'}), 400
     
     # Save to database
     try:
@@ -209,18 +212,18 @@ def refresh_token():
     
     Call this when the access token expires (or is about to).
     """
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     # Make sure user still exists and is active
     user = User.query.get(user_id)
     if not user or not user.is_active:
         return jsonify({'error': 'Session invalide'}), 401
-    
+
     # Update last seen
     user.last_seen = datetime.utcnow()
     db.session.commit()
-    
-    new_token = create_access_token(identity=user_id)
+
+    new_token = create_access_token(identity=str(user_id))
     
     return jsonify({'access_token': new_token}), 200
 
@@ -237,9 +240,9 @@ def get_me():
     
     Includes private info since it's their own profile.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
-    
+
     if not user:
         return jsonify({'error': 'Utilisateur introuvable'}), 404
 
@@ -265,8 +268,8 @@ def change_password():
     Requires current password for verification.
     """
     data = request.get_json()
-    user_id = get_jwt_identity()
-    
+    user_id = int(get_jwt_identity())
+
     old_password = data.get('old_password', '')
     new_password = data.get('new_password', '')
     
@@ -310,15 +313,15 @@ def logout():
     For now this is mostly informational since JWTs are stateless.
     Real logout happens client-side by deleting tokens.
     """
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
-    
+
     if user:
         user.last_seen = datetime.utcnow()
         db.session.commit()
-    
+
     # TODO: Add token to blacklist when we implement that
-    
+
     return jsonify({'message': 'Déconnecté avec succès'}), 200
 
 

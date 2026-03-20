@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Image, Pressable, ActivityIndicator, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -269,10 +269,19 @@ const ActivityOverview: React.FC = () => {
                 )}
 
                 {/* Visio link */}
-                {activity.activity_type === 'visio' && activity.visio_url && (
+                {activity.activity_type === 'visio' && (
                     <View className={`px-4 py-4 ${isDarkMode ? "bg-black" : "bg-white"}`}>
                         <Text className={`font-bold text-lg mb-2 ${isDarkMode ? "text-white" : "text-black"}`}>Lien Visio</Text>
-                        <TouchableOpacity className="bg-[#065C98] rounded-lg px-4 py-3 items-center">
+                        <TouchableOpacity
+                            className="bg-[#065C98] rounded-lg px-4 py-3 items-center"
+                            onPress={() => {
+                                if (activity.visio_url) {
+                                    Linking.openURL(activity.visio_url);
+                                } else {
+                                    Toast.show({ type: 'error', text1: 'Aucun lien de visioconférence disponible', position: 'top', topOffset: 60 });
+                                }
+                            }}
+                        >
                             <Text className="text-white font-medium">Rejoindre la visio</Text>
                         </TouchableOpacity>
                     </View>

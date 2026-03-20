@@ -8,6 +8,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Toast from "react-native-toast-message";
 import { useAuth } from "../../src/contexts/AuthContext";
+import { authService } from "../../src/services/auth";
 import type { InlineErrors } from "../../src/types";
 
 const getPasswordStrength = (pwd: string): number => {
@@ -16,6 +17,7 @@ const getPasswordStrength = (pwd: string): number => {
     if (/[A-Z]/.test(pwd)) score++;
     if (/[a-z]/.test(pwd)) score++;
     if (/[0-9]/.test(pwd)) score++;
+    if (/[^a-zA-Z0-9]/.test(pwd)) score++;
     return score;
 };
 const strengthColors = ['#EF4444', '#F97316', '#EAB308', '#22C55E'];
@@ -26,6 +28,7 @@ type RootStackParamList = {
     Login: undefined;
     RegisterPerson: undefined;
     RegisterProAsso: undefined;
+    AddProfilePhotoPerson: { registerData: import("../../src/types").RegisterData };
 };
 
 // Typage de la navigation
@@ -94,6 +97,7 @@ const RegisterPerson: React.FC = () => {
             else if (!/[A-Z]/.test(val)) { u.password = '1 majuscule requise'; }
             else if (!/[a-z]/.test(val)) { u.password = '1 minuscule requise'; }
             else if (!/[0-9]/.test(val)) { u.password = '1 chiffre requis'; }
+            else if (!/[^a-zA-Z0-9]/.test(val)) { u.password = '1 caractère spécial requis (!@#$%...).'; }
             else { delete u.password; }
             return u;
         });
@@ -138,7 +142,7 @@ const RegisterPerson: React.FC = () => {
                 </View>
 
                 {/* Champ obligatoire */}
-                <Text className="text-red-500 font-medium mt-4">* Obligatoire</Text>
+                <Text className="text-red-700 font-medium mt-4">* Obligatoire</Text>
 
                 {/* Sélection du genre */}
                 <View className="mt-4 flex-row justify-between">
@@ -179,7 +183,9 @@ const RegisterPerson: React.FC = () => {
 
                 {/* Date de naissance — DatePicker */}
                 <View className="mt-6">
-                    <Text className="text-base font-medium">Né(e) le *</Text>
+                    <Text className="text-base font-medium">
+                        Né(e) le <Text className="text-red-700">*</Text>
+                    </Text>
                     <TouchableOpacity
                         onPress={() => setShowDatePicker(true)}
                         className={`flex-row items-center rounded-md px-4 py-3 mt-2 border ${errors.birth_date ? 'border-red-500' : 'border-gray-300'}`}
@@ -190,7 +196,7 @@ const RegisterPerson: React.FC = () => {
                         </Text>
                     </TouchableOpacity>
                     {errors.birth_date ? (
-                        <Text className="text-red-500 text-xs mt-1 ml-1">{errors.birth_date}</Text>
+                        <Text className="text-red-700 text-xs mt-1 ml-1">{errors.birth_date}</Text>
                     ) : (
                         <Text className="text-sm mt-1">Tu dois avoir au moins 13 ans</Text>
                     )}
@@ -209,7 +215,7 @@ const RegisterPerson: React.FC = () => {
                 {/* Prénom */}
                 <View className="mt-6">
                     <Text className="text-base font-medium">
-                        Prénom <Text className="text-red-500">*</Text>
+                        Prénom <Text className="text-red-700">*</Text>
                     </Text>
                     <TextInput
                         value={firstName}
@@ -218,13 +224,13 @@ const RegisterPerson: React.FC = () => {
                         placeholder="(exemple : Mathilde)"
                         className={`border rounded-md px-4 py-3 mt-2 ${errors.first_name ? 'border-red-500' : 'border-gray-300'}`}
                     />
-                    {errors.first_name ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.first_name}</Text> : null}
+                    {errors.first_name ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.first_name}</Text> : null}
                 </View>
 
                 {/* Nom */}
                 <View className="mt-6">
                     <Text className="text-base font-medium">
-                        Nom <Text className="text-red-500">*</Text>
+                        Nom <Text className="text-red-700">*</Text>
                     </Text>
                     <TextInput
                         value={lastName}
@@ -233,7 +239,7 @@ const RegisterPerson: React.FC = () => {
                         placeholder="(exemple : Dupont)"
                         className={`border rounded-md px-4 py-3 mt-2 ${errors.last_name ? 'border-red-500' : 'border-gray-300'}`}
                     />
-                    {errors.last_name ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.last_name}</Text> : null}
+                    {errors.last_name ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.last_name}</Text> : null}
                     <Text className="text-sm mt-1">
                         Ton profil apparaîtra comme ceci : <Text className="font-bold">Mathilde N.</Text> (ton nom de famille restera
                         secret 😉)
@@ -243,7 +249,7 @@ const RegisterPerson: React.FC = () => {
                 {/* Ville */}
                 <View className="mt-6">
                     <Text className="text-base font-medium">
-                        Ville <Text className="text-red-500">*</Text>
+                        Ville <Text className="text-red-700">*</Text>
                     </Text>
                     <TextInput
                         value={city}
@@ -271,7 +277,7 @@ const RegisterPerson: React.FC = () => {
                 {/* Pseudo */}
                 <View className="mt-6">
                     <Text className="text-base font-medium">
-                        Pseudo <Text className="text-red-500">*</Text>
+                        Pseudo <Text className="text-red-700">*</Text>
                     </Text>
                     <TextInput
                         value={pseudo}
@@ -282,7 +288,7 @@ const RegisterPerson: React.FC = () => {
                         className={`border rounded-md px-4 py-3 mt-2 ${errors.pseudo ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.pseudo ? (
-                        <Text className="text-red-500 text-xs mt-1 ml-1">{errors.pseudo}</Text>
+                        <Text className="text-red-700 text-xs mt-1 ml-1">{errors.pseudo}</Text>
                     ) : (
                         <Text className="text-sm mt-1">C'est ton identifiant unique sur Gocial</Text>
                     )}
@@ -291,7 +297,7 @@ const RegisterPerson: React.FC = () => {
                 {/* Email */}
                 <View className="mt-6">
                     <Text className="text-base font-medium">
-                        Email <Text className="text-red-500">*</Text>
+                        Email <Text className="text-red-700">*</Text>
                     </Text>
                     <TextInput
                         value={email}
@@ -303,13 +309,13 @@ const RegisterPerson: React.FC = () => {
                         autoCorrect={false}
                         className={`border rounded-md px-4 py-3 mt-2 ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                     />
-                    {errors.email ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.email}</Text> : null}
+                    {errors.email ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.email}</Text> : null}
                 </View>
 
                 {/* Mot de passe */}
                 <View className="mt-6">
                     <Text className="text-base font-medium">
-                        Mot de passe <Text className="text-red-500">*</Text>
+                        Mot de passe <Text className="text-red-700">*</Text>
                     </Text>
                     <TextInput
                         value={password}
@@ -319,7 +325,7 @@ const RegisterPerson: React.FC = () => {
                         secureTextEntry
                         className={`border rounded-md px-4 py-3 mt-2 ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
                     />
-                    {errors.password ? <Text className="text-red-500 text-xs mt-1 ml-1">{errors.password}</Text> : null}
+                    {errors.password ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.password}</Text> : null}
                     {/* Indicateur de force du mot de passe */}
                     {password.length > 0 && (
                         <View className="mt-2">
@@ -370,8 +376,8 @@ const RegisterPerson: React.FC = () => {
                             }
                             if (!password) {
                                 validationErrors.password = 'Le mot de passe est obligatoire.';
-                            } else if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-                                validationErrors.password = 'Mot de passe trop faible (8 car., 1 maj., 1 min., 1 chiffre)';
+                            } else if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+                                validationErrors.password = 'Le mot de passe doit contenir au moins 8 caractères, 1 majuscule, 1 chiffre et 1 caractère spécial (!@#$%...).';
                             }
                             if (!birthDate) {
                                 validationErrors.birth_date = 'La date de naissance est obligatoire.';
@@ -390,9 +396,47 @@ const RegisterPerson: React.FC = () => {
                                 });
                                 return;
                             }
+
+                            // Vérifier disponibilité email + pseudo côté serveur
                             setIsSubmitting(true);
                             try {
-                                await register({
+                                const [emailCheck, pseudoCheck] = await Promise.all([
+                                    authService.checkEmail(email.trim().toLowerCase()),
+                                    authService.checkPseudo(pseudo.trim()),
+                                ]);
+                                const serverErrors: InlineErrors = {};
+                                if (!emailCheck.available) {
+                                    serverErrors.email = emailCheck.reason || 'Cet email est déjà utilisé';
+                                }
+                                if (!pseudoCheck.available) {
+                                    serverErrors.pseudo = pseudoCheck.reason || 'Ce pseudo est déjà pris';
+                                }
+                                if (Object.keys(serverErrors).length > 0) {
+                                    setErrors(serverErrors);
+                                    Toast.show({
+                                        type: 'error',
+                                        text1: 'Inscription impossible',
+                                        text2: Object.values(serverErrors).join('. '),
+                                        position: 'top',
+                                        topOffset: 60,
+                                    });
+                                    return;
+                                }
+                            } catch {
+                                Toast.show({
+                                    type: 'error',
+                                    text1: 'Erreur de connexion',
+                                    text2: 'Impossible de vérifier la disponibilité. Réessaie.',
+                                    position: 'top',
+                                    topOffset: 60,
+                                });
+                                return;
+                            } finally {
+                                setIsSubmitting(false);
+                            }
+
+                            navigation.navigate("AddProfilePhotoPerson", {
+                                registerData: {
                                     email: email.trim().toLowerCase(),
                                     password,
                                     pseudo: pseudo.trim(),
@@ -403,22 +447,8 @@ const RegisterPerson: React.FC = () => {
                                     city: city.trim() || undefined,
                                     phone: formattedNumber || undefined,
                                     user_type: 'person',
-                                });
-                                // Auth context handles navigation automatically
-                            } catch (err: unknown) {
-                                const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
-                                const msg =
-                                    apiErr?.response?.data?.error ||
-                                    apiErr?.response?.data?.message ||
-                                    "Erreur lors de l'inscription.";
-                                const fieldErrors = parseBackendError(msg);
-                                if (Object.keys(fieldErrors).length > 0) {
-                                    setErrors(prev => ({ ...prev, ...fieldErrors }) as InlineErrors);
-                                }
-                                Toast.show({ type: 'error', text1: 'Inscription échouée', text2: msg, position: 'top', topOffset: 60 });
-                            } finally {
-                                setIsSubmitting(false);
-                            }
+                                },
+                            });
                         }}
                     >
                         {isSubmitting ? (

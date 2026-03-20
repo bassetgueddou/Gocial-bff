@@ -45,7 +45,7 @@ const ProfileView: React.FC = () => {
         if (selectedUserId) {
             try {
                 await sendRequest(selectedUserId);
-                Toast.show({ type: "success", text1: `Demande envoyee a ${selectedUserName}`, text2: "Votre demande d'ami a ete envoyee avec succes.", visibilityTime: 2500, position: "top", topOffset: 60 });
+                Toast.show({ type: "success", text1: `Demande envoyée à ${selectedUserName}`, text2: "Votre demande d'ami a été envoyée avec succès.", visibilityTime: 2500, position: "top", topOffset: 60 });
             } catch {
                 Toast.show({ type: "error", text1: "Erreur", text2: "Impossible d'envoyer la demande.", position: "top", topOffset: 60 });
             }

@@ -7,6 +7,8 @@ import { useTheme } from "../ThemeContext";
 import dayjs from "dayjs";
 import "dayjs/locale/fr";
 import { useConversation } from "../../src/hooks/useMessages";
+import Toast from "react-native-toast-message";
+import { reportService } from "../../src/services/reports";
 
 dayjs.locale("fr");
 
@@ -53,8 +55,25 @@ const ExternalMessageModal: React.FC<ExternalMessageModalProps> = ({ visible, on
         return messageDate.format("ddd D MMM YYYY");
     };
 
-    const handleSubmit = () => {
-        console.log("Raison du signalement:", reason);
+    const handleSubmit = async () => {
+        if (!reason.trim()) {
+            Toast.show({ type: "error", text1: "Veuillez décrire la raison", position: "top", topOffset: 60 });
+            return;
+        }
+        try {
+            await reportService.createReport({
+                report_type: 'user',
+                reported_user_id: partnerId,
+                reason: 'inappropriate_message',
+                description: reason,
+            });
+            Toast.show({ type: "success", text1: "Signalement envoyé", position: "top", topOffset: 60 });
+            setReportVisible(false);
+            setMessageVisible(true);
+            setReason("");
+        } catch {
+            Toast.show({ type: "error", text1: "Erreur lors du signalement", position: "top", topOffset: 60 });
+        }
     };
 
     const displayMessages = messages.map((m: any) => ({

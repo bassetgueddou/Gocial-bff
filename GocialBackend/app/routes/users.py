@@ -12,7 +12,8 @@ import os
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.models import User, Activity, Friendship
+from app.models import User, Activity, Friendship, Evaluation
+from sqlalchemy import func
 
 users_bp = Blueprint('users', __name__)
 
@@ -98,7 +99,7 @@ def update_profile():
         'email', 'first_name', 'last_name', 'pseudo', 'phone', 'gender',
         'city', 'address', 'postal_code', 'bio',
         'company_name', 'description', 'website',
-        'instagram', 'facebook', 'tiktok', 'snapchat',
+        'instagram', 'facebook', 'tiktok', 'snapchat', 'twitter', 'linkedin', 'youtube',
         'languages', 'profession', 'passions', 'studies', 'school',
         'alcohol', 'tobacco', 'food_preference', 'allergies', 'children',
     ]
@@ -402,3 +403,36 @@ def delete_account():
         return jsonify({'error': 'Échec de la suppression'}), 500
 
     return jsonify({'message': 'Compte supprimé définitivement'}), 200
+
+
+# ---------------------------------------------------------------------
+# Get user average rating
+# ---------------------------------------------------------------------
+
+@users_bp.route('/<int:user_id>/rating', methods=['GET'])
+@jwt_required()
+def get_user_rating(user_id):
+    """
+    Get the average rating for a user across all activities.
+
+    Returns avg_rating (1-5) and total number of evaluations received.
+    """
+    int(get_jwt_identity())  # Auth check
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'Utilisateur introuvable'}), 404
+
+    result = db.session.query(
+        func.avg(Evaluation.rating),
+        func.count(Evaluation.id)
+    ).filter(Evaluation.evaluated_id == user_id).first()
+
+    avg_rating = round(float(result[0]), 1) if result[0] else None
+    total_evaluations = result[1] or 0
+
+    return jsonify({
+        'user_id': user_id,
+        'avg_rating': avg_rating,
+        'total_evaluations': total_evaluations
+    }), 200

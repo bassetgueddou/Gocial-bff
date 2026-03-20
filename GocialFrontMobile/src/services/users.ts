@@ -35,7 +35,8 @@ export const userService = {
     name: string;
   }): Promise<{ message: string; avatar_url: string }> => {
     const formData = new FormData();
-    formData.append('file', file as any);
+    // React Native FormData accepts {uri, type, name} but TS expects Blob
+    formData.append('file', file as unknown as Blob);
 
     const response = await api.post('/api/users/profile/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -80,6 +81,11 @@ export const userService = {
     const response = await api.delete('/api/users/delete', {
       data: { password, confirmation },
     });
+    return response.data;
+  },
+
+  getUserRating: async (userId: number): Promise<{ avg_rating: number; total_evaluations: number }> => {
+    const response = await api.get(`/api/users/${userId}/rating`);
     return response.data;
   },
 };

@@ -15,17 +15,17 @@ const EditLearnMore: React.FC = () => {
     const { user, refreshUser } = useAuth();
     const [saving, setSaving] = useState(false);
 
-    const [languages, setLanguages] = useState((user as any)?.languages || "");
-    const [profession, setProfession] = useState((user as any)?.profession || "");
-    const [passions, setPassions] = useState((user as any)?.passions || "");
-    const [school, setSchool] = useState((user as any)?.school || "");
-    const [allergies, setAllergies] = useState((user as any)?.allergies || "");
-    const [children, setChildren] = useState((user as any)?.children || "");
+    const [languages, setLanguages] = useState(user?.languages || "");
+    const [profession, setProfession] = useState(user?.profession || "");
+    const [passions, setPassions] = useState(user?.passions || "");
+    const [school, setSchool] = useState(user?.school || "");
+    const [allergies, setAllergies] = useState(user?.allergies || "");
+    const [children, setChildren] = useState(user?.children || "");
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string | null>>({
-        studies: (user as any)?.studies || null,
-        alcohol: (user as any)?.alcohol || null,
-        tobacco: (user as any)?.tobacco || null,
-        food: (user as any)?.food_preference || null,
+        studies: user?.studies || null,
+        alcohol: user?.alcohol || null,
+        tobacco: user?.tobacco || null,
+        food: user?.food_preference || null,
     });
 
     const toggleOption = (category: string, option: string) => {
@@ -49,7 +49,7 @@ const EditLearnMore: React.FC = () => {
                 alcohol: selectedOptions.alcohol,
                 tobacco: selectedOptions.tobacco,
                 food_preference: selectedOptions.food,
-            } as any);
+            });
             await refreshUser();
             Toast.show({ type: "success", text1: "Profil mis à jour" });
             navigation.goBack();
@@ -79,6 +79,18 @@ const EditLearnMore: React.FC = () => {
         </View>
     );
 
+    const getLearnMorePlaceholder = (label: string): string => {
+        switch (label) {
+            case "Langues": return "Ex : Français, Anglais, Espagnol...";
+            case "Profession": return "Ex : Développeur, Étudiant, Designer...";
+            case "Passions": return "Ex : Sport, Musique, Voyage...";
+            case "École": return "Ex : Université Paris-Saclay...";
+            case "Allergies": return "Ex : Gluten, Arachides...";
+            case "Enfants": return "Ex : 2 enfants";
+            default: return "";
+        }
+    };
+
     const renderTextInput = (label: string, value: string, setValue: (text: string) => void) => (
         <View className="mt-2 w-full">
             <Text className={`font-bold text-lg px-4 mb-2 ${isDarkMode ? "text-white" : "text-black"}`}>{label}</Text>
@@ -87,6 +99,7 @@ const EditLearnMore: React.FC = () => {
                     className={`border ${isDarkMode ? "border-[0.3px] border-white" : "border-[#065C98]"} p-3 rounded-lg ${isDarkMode ? "bg-black text-white" : "bg-white text-black"}`}
                     value={value}
                     onChangeText={setValue}
+                    placeholder={getLearnMorePlaceholder(label)}
                     placeholderTextColor="#ABABAB"
                 />
             </View>
@@ -112,10 +125,10 @@ const EditLearnMore: React.FC = () => {
                 {renderTextInput("Profession", profession, setProfession)}
                 {renderTextInput("Passions", passions, setPassions)}
 
-                <Text className={`font-bold text-lg mt-4 px-4 ${isDarkMode ? "text-white" : "text-black"}`}>Etudes</Text>
+                <Text className={`font-bold text-lg mt-4 px-4 ${isDarkMode ? "text-white" : "text-black"}`}>Études</Text>
                 {renderOptions("studies", ["Privé", "CAP", "Bac", "Bac +2", "Licence", "Master", "Doctorat", "Formation professionnelle"])}
 
-                {renderTextInput("Ecole", school, setSchool)}
+                {renderTextInput("École", school, setSchool)}
 
                 <Text className={`font-bold text-lg mt-4 px-4 ${isDarkMode ? "text-white" : "text-black"}`}>Alcool</Text>
                 {renderOptions("alcohol", ["Privé", "Non", "Parfois", "Lors de sorties entre amis"])}

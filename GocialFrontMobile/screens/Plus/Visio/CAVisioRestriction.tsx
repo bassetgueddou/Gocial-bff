@@ -54,7 +54,7 @@ const options: { key: ParticipantType; label: string }[] = [
     { key: "women", label: "Femmes" },
     { key: "non-binary", label: "Non-Binaires" },
     { key: "families", label: "Familles" },
-    { key: "students", label: "Etudiants" },
+    { key: "students", label: "Étudiants" },
     { key: "singles", label: "Célibataires" },
 ];
 
@@ -213,9 +213,9 @@ const CAVisioRestriction: React.FC = () => {
                     />
                 </View>
 
-                {/* Participants non Vérifier */}
+                {/* Participants non vérifiés */}
                 <Text className={`text-base font-medium mb-2 px-2 ${isDarkMode ? "text-white" : ""}`}>
-                    Les participants non Vérifier seront <Text className="text-red-600">*</Text>
+                    Les participants non vérifiés seront <Text className="text-red-600">*</Text>
                 </Text>
                 <View className={`flex-row space-x-2 mb-4 p-2 ${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"}`}>
                     <ToggleButton

@@ -9,7 +9,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
     GetPremiumPerson: undefined;
-    GetPremiumPlusProAsso: undefined;
+    GetPremiumPlusPerson: undefined;
 };
 
 // Typage de la navigation
@@ -123,7 +123,7 @@ const PremiumOfferPerson: React.FC = () => {
                 </TouchableOpacity>
 
                 {/* Bouton Obtenir Premium+ */}
-                <TouchableOpacity onPress={() => navigation.navigate("GetPremiumPlusProAsso")}>
+                <TouchableOpacity onPress={() => navigation.navigate("GetPremiumPlusPerson")}>
                     <LinearGradient
                         colors={["#C3AE79", "#AC9A6B", "#8B794B"]}
                         locations={[0.32, 0.56, 1]}

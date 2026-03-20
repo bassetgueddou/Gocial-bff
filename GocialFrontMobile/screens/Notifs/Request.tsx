@@ -150,7 +150,7 @@ const Request: React.FC = () => {
             ) : (
                 sent.length === 0 ? (
                     <View className="flex-1 items-center justify-center">
-                        <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"} text-lg`}>Aucune demande envoyee</Text>
+                        <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-500"} text-lg`}>Aucune demande envoyée</Text>
                     </View>
                 ) : (
                     <FlatList
