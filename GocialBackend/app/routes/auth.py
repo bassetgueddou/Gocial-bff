@@ -36,16 +36,19 @@ def validate_password(password):
     Password requirements:
     - At least 8 characters
     - Has a number
-    - Has uppercase and lowercase
+    - Has uppercase
+    - Has lowercase and special characters
     """
     if len(password) < 8:
         return False, "Le mot de passe doit contenir au moins 8 caractères"
     if not any(c.isdigit() for c in password):
-        return False, "Le mot de passe doit contenir au moins un chiffre"
+        return False, "Le mot de passe doit contenir au moins 1 chiffre"
     if not any(c.isupper() for c in password):
-        return False, "Le mot de passe doit contenir au moins une majuscule"
+        return False, "Le mot de passe doit contenir au moins 1 majuscule"
     if not any(c.islower() for c in password):
-        return False, "Le mot de passe doit contenir au moins une minuscule"
+        return False, "Le mot de passe doit contenir au moins 1 minuscule"
+    if not any(not c.isalnum() for c in password):
+        return False, "Le mot de passe doit contenir au moins 1 caractère spécial"
     return True, None
 
 
