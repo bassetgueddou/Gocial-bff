@@ -69,20 +69,6 @@ const AddProfilePhotoProAsso: React.FC = () => {
                     type: fileType,
                     name: fileName,
                 });
-                Toast.show({
-                    type: "success",
-                    text1: "Bienvenue sur Gocial !",
-                    text2: "Ta photo de profil a été ajoutée.",
-                    position: "top",
-                    topOffset: 60,
-                });
-            } else {
-                Toast.show({
-                    type: "success",
-                    text1: "Bienvenue sur Gocial !",
-                    position: "top",
-                    topOffset: 60,
-                });
             }
             // Auth context handles navigation to Main automatically
         } catch (err: unknown) {
@@ -105,7 +91,6 @@ const AddProfilePhotoProAsso: React.FC = () => {
         setIsLoading(true);
         try {
             await register(registerData);
-            Toast.show({ type: "success", text1: "Bienvenue sur Gocial !", position: "top", topOffset: 60 });
             // Auth context handles navigation to Main automatically
         } catch (err: unknown) {
             const apiErr = err as { response?: { data?: { error?: string; message?: string } } };

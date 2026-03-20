@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, Dimensions, Pressable, ActivityIndicator } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import { View, Text, Image, TouchableOpacity, ScrollView, Dimensions, Pressable, ActivityIndicator, Platform } from "react-native";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { useTheme } from "../ThemeContext";
@@ -65,7 +65,39 @@ const getCategoryColor = (category: string | null) => {
     }
 };
 
+class MapErrorBoundary extends React.Component<
+    { children: React.ReactNode },
+    { hasError: boolean; error?: string }
+> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error: error.message };
+    }
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error('[HomeMap] MapErrorBoundary caught:', error.message, info.componentStack);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: 'red', textAlign: 'center', paddingHorizontal: 16 }}>
+                        Carte indisponible : {this.state.error}
+                    </Text>
+                </View>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 const HomeMap: React.FC = () => {
+    // ════════════════════════════════════════════════════════════
+    // BLOC 1 — TOUS les hooks ici, SANS EXCEPTION
+    // ⚠️ RÈGLE HOOKS : ne JAMAIS ajouter de return conditionnel avant la fin de ce bloc
+    // ════════════════════════════════════════════════════════════
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [shareActivity, setShareActivity] = useState<Activity | undefined>(undefined);
     const [modalShareVisible, setModalShareVisible] = useState(false);
@@ -91,6 +123,7 @@ const HomeMap: React.FC = () => {
     };
 
     const mapRef = useRef<MapView>(null);
+    const headingRef = useRef(0);
 
     const recenterToUserLocation = () => {
         Geolocation.getCurrentPosition(
@@ -105,9 +138,9 @@ const HomeMap: React.FC = () => {
                 }, 1000);
             },
             (error) => {
-                console.error("Erreur de g\u00e9olocalisation :", error);
+                if (__DEV__) console.log('[HomeMap] Erreur géolocalisation :', error.message);
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
         );
     };
 
@@ -135,27 +168,40 @@ const HomeMap: React.FC = () => {
 
     useEffect(() => {
         let subscription: { closed?: boolean; unsubscribe: () => void } | undefined;
+        let mounted = true;
 
         try {
-            setUpdateIntervalForType(SensorTypes.magnetometer, 300);
+            setUpdateIntervalForType(SensorTypes.magnetometer, 1000); // 1s au lieu de 300ms
 
             subscription = magnetometer.subscribe(
                 (data: { x: number; y: number; z: number }) => {
-                    const h = calculateHeading(data);
-                    setHeading(h);
+                    if (!mounted) return;
+                    try {
+                        const h = calculateHeading(data);
+                        // Seuil de 10° pour éviter les re-renders inutiles
+                        if (Math.abs(h - headingRef.current) > 10) {
+                            headingRef.current = h;
+                            setHeading(h);
+                        }
+                    } catch {
+                        // Ignore calculation errors
+                    }
                 },
-                (error: { message?: string }) => {
-                    console.warn("Magnetometer not available or failed:", error.message || error);
+                () => {
+                    // Magnetometer not available (emulator)
                 }
             );
-        } catch (error) {
-            console.warn("Failed to subscribe to magnetometer:", error);
+        } catch {
+            // Sensor not supported
         }
 
         return () => {
-            if (subscription && !subscription.closed) {
-                subscription.unsubscribe();
-            }
+            mounted = false;
+            try {
+                if (subscription && !subscription.closed) {
+                    subscription.unsubscribe();
+                }
+            } catch { }
         };
     }, []);
 
@@ -191,6 +237,14 @@ const HomeMap: React.FC = () => {
         };
     }, [mapActivities]);
 
+    // ════════════════════════════════════════════════════════════
+    // BLOC 2 — Early returns conditionnels (APRÈS tous les hooks)
+    // (HomeMap n'a pas d'early return — la carte s'affiche toujours)
+    // ════════════════════════════════════════════════════════════
+
+    // ════════════════════════════════════════════════════════════
+    // BLOC 3 — Render principal
+    // ════════════════════════════════════════════════════════════
     return (
         <View className="flex-1">
             <ShareModal visible={modalShareVisible} onClose={() => setModalShareVisible(false)} activity={shareActivity} />
@@ -202,73 +256,77 @@ const HomeMap: React.FC = () => {
                 <MaterialIcons name="my-location" size={24} color="#065C98" />
             </TouchableOpacity>
 
-            <MapView
-                ref={mapRef}
-                style={{ flex: 1 }}
-                initialRegion={initialRegion}
-            >
-                {mapActivities.map((activity) => (
-                    <Marker
-                        key={activity.id}
-                        coordinate={{ latitude: activity.latitude!, longitude: activity.longitude! }}
-                        onPress={() => handleMarkerPress(activity.id)}
-                        anchor={{ x: 0.5, y: 1 }}
-                    >
-                        <Image
-                            source={
-                                selectedEventId === activity.id
-                                    ? require("../../img/pin-selected.png")
-                                    : require("../../img/pin.png")
-                            }
-                            style={{
-                                width: 30,
-                                height: 30,
-                                tintColor: getCategoryColor(activity.category),
-                            }}
-                            resizeMode="contain"
-                        />
-                    </Marker>
-                ))}
-
-                {userLocation && (
-                    <Marker coordinate={userLocation} anchor={{ x: 0.5, y: 0.5 }}>
-                        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                            <Svg
-                                width={60}
-                                height={60}
+            <MapErrorBoundary>
+                <MapView
+                    ref={mapRef}
+                    style={{ flex: 1 }}
+                    provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+                    initialRegion={initialRegion}
+                    onMapReady={() => {}}
+                >
+                    {mapActivities.map((activity) => (
+                        <Marker
+                            key={activity.id}
+                            coordinate={{ latitude: activity.latitude!, longitude: activity.longitude! }}
+                            onPress={() => handleMarkerPress(activity.id)}
+                            anchor={{ x: 0.5, y: 1 }}
+                        >
+                            <Image
+                                source={
+                                    selectedEventId === activity.id
+                                        ? require("../../img/pin-selected.png")
+                                        : require("../../img/pin.png")
+                                }
                                 style={{
-                                    position: 'absolute',
-                                    transform: [{ rotate: `${heading}deg` }],
-                                    zIndex: 1,
+                                    width: 30,
+                                    height: 30,
+                                    tintColor: getCategoryColor(activity.category),
                                 }}
-                            >
-                                <Defs>
-                                    <LinearGradient id="beamGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <Stop offset="0" stopColor="#004eb5" stopOpacity="1" />
-                                        <Stop offset="1" stopColor="#1a6ad4" stopOpacity="0" />
-                                    </LinearGradient>
-                                </Defs>
-                                <Path
-                                    d="M30,22 L50,60 L10,60 Z"
-                                    fill="url(#beamGradient)"
-                                />
-                            </Svg>
-
-                            <View
-                                style={{
-                                    width: 16,
-                                    height: 16,
-                                    borderRadius: 8,
-                                    backgroundColor: '#1A73E8',
-                                    borderColor: 'white',
-                                    borderWidth: 3,
-                                    zIndex: 2,
-                                }}
+                                resizeMode="contain"
                             />
-                        </View>
-                    </Marker>
-                )}
-            </MapView>
+                        </Marker>
+                    ))}
+
+                    {userLocation && (
+                        <Marker coordinate={userLocation} anchor={{ x: 0.5, y: 0.5 }}>
+                            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                                <Svg
+                                    width={60}
+                                    height={60}
+                                    style={{
+                                        position: 'absolute',
+                                        transform: [{ rotate: `${heading}deg` }],
+                                        zIndex: 1,
+                                    }}
+                                >
+                                    <Defs>
+                                        <LinearGradient id="beamGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <Stop offset="0" stopColor="#004eb5" stopOpacity="1" />
+                                            <Stop offset="1" stopColor="#1a6ad4" stopOpacity="0" />
+                                        </LinearGradient>
+                                    </Defs>
+                                    <Path
+                                        d="M30,22 L50,60 L10,60 Z"
+                                        fill="url(#beamGradient)"
+                                    />
+                                </Svg>
+
+                                <View
+                                    style={{
+                                        width: 16,
+                                        height: 16,
+                                        borderRadius: 8,
+                                        backgroundColor: '#1A73E8',
+                                        borderColor: 'white',
+                                        borderWidth: 3,
+                                        zIndex: 2,
+                                    }}
+                                />
+                            </View>
+                        </Marker>
+                    )}
+                </MapView>
+            </MapErrorBoundary>
 
             {loading ? (
                 <View className="absolute bottom-10 self-center">
@@ -400,4 +458,4 @@ const HomeMap: React.FC = () => {
     );
 };
 
-export default HomeMap;
+export default React.memo(HomeMap);
