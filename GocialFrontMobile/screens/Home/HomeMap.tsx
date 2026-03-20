@@ -135,26 +135,37 @@ const HomeMap: React.FC = () => {
 
     useEffect(() => {
         let subscription: { closed?: boolean; unsubscribe: () => void } | undefined;
+        let mounted = true;
 
         try {
             setUpdateIntervalForType(SensorTypes.magnetometer, 300);
 
             subscription = magnetometer.subscribe(
                 (data: { x: number; y: number; z: number }) => {
-                    const h = calculateHeading(data);
-                    setHeading(h);
+                    if (!mounted) return;
+                    try {
+                        const h = calculateHeading(data);
+                        setHeading(h);
+                    } catch {
+                        // Ignore calculation errors
+                    }
                 },
-                (error: { message?: string }) => {
-                    console.warn("Magnetometer not available or failed:", error.message || error);
+                () => {
+                    // Magnetometer not available (emulator) — silently ignore
                 }
             );
-        } catch (error) {
-            console.warn("Failed to subscribe to magnetometer:", error);
+        } catch {
+            // Sensor not supported on this device — no-op
         }
 
         return () => {
-            if (subscription && !subscription.closed) {
-                subscription.unsubscribe();
+            mounted = false;
+            try {
+                if (subscription && !subscription.closed) {
+                    subscription.unsubscribe();
+                }
+            } catch {
+                // Cleanup error — ignore
             }
         };
     }, []);

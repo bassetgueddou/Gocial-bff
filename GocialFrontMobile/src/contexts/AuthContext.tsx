@@ -34,7 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Sync dark mode preference from user profile
   useEffect(() => {
-    if (user?.dark_mode !== undefined) {
+    if (__DEV__) {
+      console.log('[AuthContext] dark_mode sync — user?.dark_mode:', user?.dark_mode);
+    }
+    if (user?.dark_mode !== undefined && user?.dark_mode !== null) {
       setDarkMode(user.dark_mode);
     }
   }, [user?.dark_mode, setDarkMode]);
@@ -105,7 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const refreshUser = useCallback(async () => {
     try {
       const { user: freshUser } = await authService.getMe();
-      setUser(freshUser);
+      setUser(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(freshUser)) return prev;
+        return freshUser;
+      });
       await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(freshUser));
     } catch {
       // silently fail

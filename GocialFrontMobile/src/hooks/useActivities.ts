@@ -16,12 +16,30 @@ export const useActivities = (options: UseActivitiesOptions = {}) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Abort controller ref for cleanup
   const abortRef = useRef<AbortController | null>(null);
+
+  // ⚠️ RÈGLE DEPS : Refs pour stabiliser fetchActivities — ne jamais mettre d'objet entier en dépendance
+  const pageRef = useRef(1);
+  const modeRef = useRef(mode);
+  const filtersRef = useRef(filters);
+  const activitiesRef = useRef<Activity[]>([]);
+
+  // Sync refs after each render (intentionally no deps)
+  useEffect(() => {
+    modeRef.current = mode;
+    filtersRef.current = filters;
+  });
+  // Sync activitiesRef synchronously for immediate access in toggleLike
+  activitiesRef.current = activities;
+
+  // 🔍 DIAGNOSTIC TEMPORAIRE — À SUPPRIMER après debug
+  if (__DEV__) {
+    console.log('[useActivities] hook called — mode:', mode, 'autoFetch:', autoFetch, 'loading:', loading);
+  }
 
   const fetchLikedActivities = useCallback(async () => {
     try {
@@ -49,38 +67,41 @@ export const useActivities = (options: UseActivitiesOptions = {}) => {
       }
       setError(null);
 
+      // ⚠️ RÈGLE DEPS : Lire depuis les refs — garde fetchActivities stable
+      const currentMode = modeRef.current;
+      const currentFilters = filtersRef.current;
+
       // Build API filter params from mode + filters
       const apiFilters: Record<string, string | number | boolean> = {};
 
-      // mode prop takes precedence, then filters.mode
-      const effectiveMode = mode ?? filters?.mode;
+      const effectiveMode = currentMode ?? currentFilters?.mode;
       if (effectiveMode) {
         apiFilters.type = effectiveMode;
       }
-      if (filters?.category) {
-        apiFilters.category = filters.category;
+      if (currentFilters?.category) {
+        apiFilters.category = currentFilters.category;
       }
-      if (filters?.search) {
-        apiFilters.search = filters.search;
+      if (currentFilters?.search) {
+        apiFilters.search = currentFilters.search;
       }
-      if (filters?.dateFrom) {
-        apiFilters.date = filters.dateFrom;
+      if (currentFilters?.dateFrom) {
+        apiFilters.date = currentFilters.dateFrom;
       }
-      if (filters?.latitude != null && filters?.longitude != null) {
-        apiFilters.lat = filters.latitude;
-        apiFilters.lng = filters.longitude;
+      if (currentFilters?.latitude != null && currentFilters?.longitude != null) {
+        apiFilters.lat = currentFilters.latitude;
+        apiFilters.lng = currentFilters.longitude;
       }
-      if (filters?.radius != null) {
-        apiFilters.radius = filters.radius;
+      if (currentFilters?.radius != null) {
+        apiFilters.radius = currentFilters.radius;
       }
-      if (filters?.girlsOnly) {
+      if (currentFilters?.girlsOnly) {
         apiFilters.girls_only = true;
       }
-      if (filters?.freeOnly) {
+      if (currentFilters?.freeOnly) {
         apiFilters.free_only = true;
       }
-      if (filters?.hostType && filters.hostType !== 'all') {
-        apiFilters.host_type = filters.hostType;
+      if (currentFilters?.hostType && currentFilters.hostType !== 'all') {
+        apiFilters.host_type = currentFilters.hostType;
       }
 
       apiFilters.page = pageToFetch;
@@ -114,37 +135,40 @@ export const useActivities = (options: UseActivitiesOptions = {}) => {
       setRefreshing(false);
       setLoadingMore(false);
     }
-  }, [mode, filters?.mode, filters?.category, filters?.search, filters?.dateFrom, filters?.latitude, filters?.longitude, filters?.radius, filters?.girlsOnly, filters?.freeOnly, filters?.hostType, fetchLikedActivities]);
+  }, [fetchLikedActivities]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-  }, [mode, filters?.mode, filters?.category, filters?.search, filters?.dateFrom, filters?.latitude, filters?.longitude, filters?.radius, filters?.girlsOnly, filters?.freeOnly, filters?.hostType]);
+  // ⚠️ RÈGLE DEPS : clé sérialisée = seules des primitives dans les dépendances
+  const filtersKey = JSON.stringify([
+    mode, filters?.mode, filters?.category, filters?.search,
+    filters?.dateFrom, filters?.latitude, filters?.longitude,
+    filters?.radius, filters?.girlsOnly, filters?.freeOnly, filters?.hostType,
+  ]);
 
+  // UN SEUL useEffect pour le fetch — élimine la cascade double-useEffect
   useEffect(() => {
     if (autoFetch) {
-      fetchActivities(false, page);
+      pageRef.current = 1;
+      fetchActivities(false, 1);
     }
-
     return () => {
-      // Cleanup: abort in-flight request on unmount or deps change
       if (abortRef.current) {
         abortRef.current.abort();
       }
     };
-  }, [autoFetch, fetchActivities, page]);
+  }, [filtersKey, autoFetch, fetchActivities]);
 
   const refresh = useCallback(() => {
-    setPage(1);
+    pageRef.current = 1;
     setHasMore(true);
     return fetchActivities(true, 1);
   }, [fetchActivities]);
 
   const loadMore = useCallback(() => {
     if (!hasMore || loadingMore || loading) return;
-    setPage((prev) => prev + 1);
-  }, [hasMore, loadingMore, loading]);
+    const nextPage = pageRef.current + 1;
+    pageRef.current = nextPage;
+    fetchActivities(false, nextPage);
+  }, [hasMore, loadingMore, loading, fetchActivities]);
 
   const toggleLike = useCallback(async (activityId: number) => {
     const optimisticUpdate = (prev: Activity[]) =>
@@ -166,7 +190,8 @@ export const useActivities = (options: UseActivitiesOptions = {}) => {
       setTopActivities(optimisticUpdate);
       setLikedActivities(optimisticUpdate);
 
-      const activity = activities.find((a) => a.id === activityId);
+      // ⚠️ RÈGLE DEPS : Lire depuis le ref — évite activities dans les deps
+      const activity = activitiesRef.current.find((a) => a.id === activityId);
       if (activity?.is_liked) {
         await activityService.unlikeActivity(activityId);
       } else {
@@ -178,7 +203,7 @@ export const useActivities = (options: UseActivitiesOptions = {}) => {
       // Revert on failure
       fetchActivities();
     }
-  }, [activities, fetchActivities, fetchLikedActivities]);
+  }, [fetchActivities, fetchLikedActivities]);
 
   return {
     activities,

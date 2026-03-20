@@ -18,7 +18,9 @@ const HomeTopTabs = () => {
         <View style={{ flex: 1 }}>
             <Header title="Activités" />
             <TopTabs.Navigator
+                initialRouteName="Réel"
                 screenOptions={{
+                    lazy: true,
                     tabBarIndicatorStyle: {
                         backgroundColor: isDarkMode ? "#1A6EDE" : "#065C98" // Couleur du trait sous l'onglet actif
                     },

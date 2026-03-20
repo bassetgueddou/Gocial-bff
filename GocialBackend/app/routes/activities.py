@@ -303,6 +303,9 @@ def create_activity():
     # Parse date
     try:
         activity_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        # Strip timezone — the app stores naive UTC datetimes
+        if activity_date.tzinfo is not None:
+            activity_date = activity_date.replace(tzinfo=None)
     except ValueError:
         return jsonify({'error': 'Format de date invalide'}), 400
 
@@ -352,11 +355,13 @@ def create_activity():
         activity.postal_code = data.get('postal_code', '').strip() or None
         activity.latitude = data.get('latitude')
         activity.longitude = data.get('longitude')
+        activity.meeting_point = data.get('meeting_point', '').strip() or None
 
     # Visio link for online activities
     if activity_type == 'visio':
         visio_link = data.get('visio_link', '') or data.get('visio_url', '')
         activity.visio_url = visio_link.strip() or None
+        activity.city = data.get('city', '').strip() or None
 
     # Image URL (if frontend uploaded the image before creating the activity)
     if data.get('image_url'):

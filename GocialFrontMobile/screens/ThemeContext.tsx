@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { useColorScheme } from "react-native";
 
 type ThemeContextType = {
@@ -19,8 +19,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsDarkMode(value);
   }, []);
 
+  // 🔍 DIAGNOSTIC TEMPORAIRE — À SUPPRIMER après debug
+  if (__DEV__) {
+    console.log('[ThemeContext] render — isDarkMode:', isDarkMode);
+  }
+
+  // ⚠️ RÈGLE DEPS : mémoïser la valeur du context pour éviter re-renders en cascade
+  const value = useMemo(() => ({ isDarkMode, toggleDarkMode, setDarkMode }), [isDarkMode, toggleDarkMode, setDarkMode]);
+
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, setDarkMode }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
