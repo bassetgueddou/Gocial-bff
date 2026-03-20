@@ -51,11 +51,6 @@ const HomeReal: React.FC = () => {
 
     const fallbackImage = require("../../img/billard-exemple.jpg");
 
-    // 🔍 DIAGNOSTIC TEMPORAIRE — À SUPPRIMER après debug
-    if (__DEV__) {
-        console.log('[HomeReal] render — loading:', loading, 'activities:', activities.length, 'error:', error);
-    }
-
     // ALL hooks MUST be declared before any conditional return
     const renderHeader = useCallback(() => (
         <>

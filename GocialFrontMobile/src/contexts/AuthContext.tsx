@@ -34,9 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Sync dark mode preference from user profile
   useEffect(() => {
-    if (__DEV__) {
-      console.log('[AuthContext] dark_mode sync — user?.dark_mode:', user?.dark_mode);
-    }
     if (user?.dark_mode !== undefined && user?.dark_mode !== null) {
       setDarkMode(user.dark_mode);
     }

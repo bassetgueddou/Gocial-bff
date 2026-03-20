@@ -19,11 +19,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsDarkMode(value);
   }, []);
 
-  // 🔍 DIAGNOSTIC TEMPORAIRE — À SUPPRIMER après debug
-  if (__DEV__) {
-    console.log('[ThemeContext] render — isDarkMode:', isDarkMode);
-  }
-
   // ⚠️ RÈGLE DEPS : mémoïser la valeur du context pour éviter re-renders en cascade
   const value = useMemo(() => ({ isDarkMode, toggleDarkMode, setDarkMode }), [isDarkMode, toggleDarkMode, setDarkMode]);
 

@@ -36,11 +36,6 @@ export const useActivities = (options: UseActivitiesOptions = {}) => {
   // Sync activitiesRef synchronously for immediate access in toggleLike
   activitiesRef.current = activities;
 
-  // 🔍 DIAGNOSTIC TEMPORAIRE — À SUPPRIMER après debug
-  if (__DEV__) {
-    console.log('[useActivities] hook called — mode:', mode, 'autoFetch:', autoFetch, 'loading:', loading);
-  }
-
   const fetchLikedActivities = useCallback(async () => {
     try {
       const data = await activityService.getLikedActivities();

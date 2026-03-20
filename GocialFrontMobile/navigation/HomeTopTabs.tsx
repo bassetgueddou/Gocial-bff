@@ -1,7 +1,7 @@
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import React from "react";
 import { View } from "react-native";
-import HomeMap from "../screens/Home/HomeMap";
+import HomeMapWebView from "../screens/Home/HomeMapWebView";
 import HomeReal from "../screens/Home/HomeReal";
 import HomeVisio from "../screens/Home/HomeVisio";
 import Header from "../screens/Header";
@@ -33,7 +33,7 @@ const HomeTopTabs = () => {
                     tabBarStyle: { backgroundColor: isDarkMode ? "#1D1E20" : "white"},
                 }}
             >
-                <TopTabs.Screen name="Carte" component={HomeMap} />
+                <TopTabs.Screen name="Carte" component={HomeMapWebView} />
                 <TopTabs.Screen name="Réel" component={HomeReal} />
                 <TopTabs.Screen name="Visio" component={HomeVisio} />
             </TopTabs.Navigator>
