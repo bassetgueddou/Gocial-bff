@@ -18,6 +18,7 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../ThemeContext";
 import Toast from "react-native-toast-message";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import type { InlineErrors } from "../../src/types";
 
 type RootStackParamList = {
@@ -196,7 +197,7 @@ const Login: React.FC = () => {
                 }`}
             />
             {errors.email ? <Text className="text-red-500 text-xs mb-3 ml-1">{errors.email}</Text> : null}
-            
+
             <Text className="mb-1 ml-1">Mot de passe</Text>
             {/* Input mot de passe */}
             <View className={`relative ${errors.password ? 'mb-1' : 'mb-4'}`}>
@@ -218,11 +219,11 @@ const Login: React.FC = () => {
                 onPress={() => setShowPassword((prev) => !prev)}
                 style={{ position: "absolute", right: 14, top: 14 }}
               >
-                <Ionicons
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={22}
-                  color={isDarkMode ? "#6B7280" : "#9CA3AF"}
-                />
+              <MaterialIcons
+                name={showPassword ? "visibility" : "visibility-off"}
+                size={20}
+                color={isDarkMode ? "white" : "black"}
+              />
               </TouchableOpacity>
             </View>
             {errors.password ? <Text className="text-red-500 text-xs mb-3 ml-1">{errors.password}</Text> : null}
