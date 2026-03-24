@@ -80,7 +80,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, error }) =
 
         {/* Phone number input */}
         <TextInput
-          className={`flex-1 text-base ${isDarkMode ? 'text-white' : 'text-black'}`}
+          className={`flex-1 text-base leading-tight ${isDarkMode ? 'text-white' : 'text-black'}`}
           placeholder="06 12 34 56 78"
           placeholderTextColor={isDarkMode ? '#6B7280' : '#9CA3AF'}
           keyboardType="phone-pad"
