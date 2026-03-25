@@ -7,7 +7,9 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import Toast from "react-native-toast-message";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { authService } from "../../src/services/auth";
-import type { InlineErrors } from "../../src/types";
+import { useTheme } from "../ThemeContext";
+import AddressAutocomplete from "../../src/components/AddressAutocomplete";
+import type { InlineErrors, AddressAutocompleteResult } from "../../src/types";
 
 const getPasswordStrength = (pwd: string): number => {
   let score = 0;
@@ -32,6 +34,7 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 const RegisterProAsso: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { register } = useAuth();
+  const { isDarkMode } = useTheme();
   const [selectedType, setSelectedType] = useState<"pro" | "asso">("pro");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -259,7 +262,16 @@ const RegisterProAsso: React.FC = () => {
 
           <View className="mt-6">
             <Text className="text-base font-medium">Adresse <Text className="text-red-700">*</Text></Text>
-            <TextInput value={address} onChangeText={t => { setAddress(t); clearError('address'); }} className="border border-[#2C5B90] rounded-md px-4 py-3 mt-2" />
+            <AddressAutocomplete
+              onSelect={(result: AddressAutocompleteResult) => {
+                setAddress(result.address);
+                clearError('address');
+              }}
+              placeholder="Rechercher une adresse"
+              isDarkMode={isDarkMode}
+              initialValue={address}
+              className="mt-2"
+            />
             {errors.address ? <Text className="text-red-700 text-xs mt-1 ml-1">{errors.address}</Text> : null}
           </View>
 

@@ -37,6 +37,10 @@ const getInitials = (first?: string | null, last?: string | null) => {
 };
 
 const HomeReal: React.FC = () => {
+    // ════════════════════════════════════════════════════════════
+    // BLOC 1 — TOUS les hooks ici, SANS EXCEPTION
+    // ⚠️ RÈGLE HOOKS : ne JAMAIS ajouter de return conditionnel avant la fin de ce bloc
+    // ════════════════════════════════════════════════════════════
     const scrollViewRef = useRef<ScrollView>(null);
     const { isDarkMode } = useTheme();
     const [shareModalVisible, setShareModalVisible] = useState(false);
@@ -47,27 +51,7 @@ const HomeReal: React.FC = () => {
 
     const fallbackImage = require("../../img/billard-exemple.jpg");
 
-    if (loading && activities.length === 0) {
-        return (
-            <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1 justify-center items-center`}>
-                <ActivityIndicator size="large" color="#065C98" />
-                <Text className={`${isDarkMode ? "text-white" : "text-black"} mt-4`}>Chargement...</Text>
-            </View>
-        );
-    }
-
-    if (error && activities.length === 0) {
-        return (
-            <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1 justify-center items-center px-6`}>
-                <MaterialIcons name="cloud-off" size={48} color={isDarkMode ? "white" : "gray"} />
-                <Text className={`${isDarkMode ? "text-white" : "text-black"} mt-4 text-center`}>{error}</Text>
-                <TouchableOpacity onPress={refresh} className="mt-4 bg-[#065C98] px-6 py-3 rounded-full">
-                    <Text className="text-white font-medium">Réessayer</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
-
+    // ALL hooks MUST be declared before any conditional return
     const renderHeader = useCallback(() => (
         <>
             {topActivities.length > 0 && (
@@ -215,6 +199,33 @@ const HomeReal: React.FC = () => {
         </View>
     ), [isDarkMode]);
 
+    // ════════════════════════════════════════════════════════════
+    // BLOC 2 — Early returns conditionnels (APRÈS tous les hooks)
+    // ════════════════════════════════════════════════════════════
+    if (loading && activities.length === 0) {
+        return (
+            <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1 justify-center items-center`}>
+                <ActivityIndicator size="large" color="#065C98" />
+                <Text className={`${isDarkMode ? "text-white" : "text-black"} mt-4`}>Chargement...</Text>
+            </View>
+        );
+    }
+
+    if (error && activities.length === 0) {
+        return (
+            <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1 justify-center items-center px-6`}>
+                <MaterialIcons name="cloud-off" size={48} color={isDarkMode ? "white" : "gray"} />
+                <Text className={`${isDarkMode ? "text-white" : "text-black"} mt-4 text-center`}>{error}</Text>
+                <TouchableOpacity onPress={refresh} className="mt-4 bg-[#065C98] px-6 py-3 rounded-full">
+                    <Text className="text-white font-medium">Réessayer</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // BLOC 3 — Render principal
+    // ════════════════════════════════════════════════════════════
     return (
         <View className={`${isDarkMode ? "bg-black" : "bg-white"} flex-1`}>
             <ShareModal visible={shareModalVisible} onClose={() => setShareModalVisible(false)} />

@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
@@ -54,13 +54,35 @@ const CARealInformation: React.FC = () => {
     };
     const [meetingPoint, setMeetingPoint] = useState(formData.meetingPoint || "");
 
-    const [showPicker, setShowPicker] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
     const [date, setDate] = useState<Date | null>(formData.date ? new Date(formData.date) : null);
 
-    const onChange = (_event: any, selectedDate?: Date) => {
-        setShowPicker(false);
+    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+        setShowDatePicker(false);
+        if (event.type === 'dismissed') return;
         if (selectedDate) {
-            setDate(selectedDate);
+            const newDate = date ? new Date(date) : new Date();
+            newDate.setFullYear(selectedDate.getFullYear());
+            newDate.setMonth(selectedDate.getMonth());
+            newDate.setDate(selectedDate.getDate());
+            setDate(newDate);
+            updateForm({ date: newDate.toISOString() });
+            if (Platform.OS === 'android') {
+                setShowTimePicker(true);
+            }
+        }
+    };
+
+    const onTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+        setShowTimePicker(false);
+        if (event.type === 'dismissed') return;
+        if (selectedTime) {
+            const newDate = date ? new Date(date) : new Date();
+            newDate.setHours(selectedTime.getHours());
+            newDate.setMinutes(selectedTime.getMinutes());
+            setDate(newDate);
+            updateForm({ date: newDate.toISOString() });
         }
     };
 
@@ -151,7 +173,7 @@ const CARealInformation: React.FC = () => {
 
                         <View className={`${isDarkMode ? "bg-black" : "bg-gray-100"} p-3 rounded-md`}>
                             <TouchableOpacity
-                                onPress={() => setShowPicker(true)}
+                                onPress={() => setShowDatePicker(true)}
                                 className={`flex-row justify-between items-center border rounded-md px-4 py-3 ${isDarkMode ? "bg-[#1D1E20] border-white" : "bg-white border-[#065C98]"}`}
                             >
                                 <Text className={`text-base ${isDarkMode ? "text-[#9EA1AB]" : ""}`}>Date & Heure</Text>
@@ -159,15 +181,43 @@ const CARealInformation: React.FC = () => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Native DateTime Picker */}
-                        {showPicker && (
+                        {/* iOS : picker datetime unique */}
+                        {Platform.OS === 'ios' && showDatePicker && (
                             <DateTimePicker
                                 mode="datetime"
-                                display={Platform.OS === "ios" ? "spinner" : "default"}
+                                display="spinner"
                                 value={date || new Date()}
-                                onChange={onChange}
+                                onChange={(event, selectedDate) => {
+                                    setShowDatePicker(false);
+                                    if (event.type === 'dismissed') return;
+                                    if (selectedDate) {
+                                        setDate(selectedDate);
+                                        updateForm({ date: selectedDate.toISOString() });
+                                    }
+                                }}
                                 minimumDate={new Date()}
                                 textColor={isDarkMode ? "white" : ""}
+                            />
+                        )}
+
+                        {/* Android : date picker (étape 1) */}
+                        {Platform.OS === 'android' && showDatePicker && (
+                            <DateTimePicker
+                                mode="date"
+                                display="default"
+                                value={date || new Date()}
+                                onChange={onDateChange}
+                                minimumDate={new Date()}
+                            />
+                        )}
+
+                        {/* Android : time picker (étape 2, après sélection de la date) */}
+                        {Platform.OS === 'android' && showTimePicker && (
+                            <DateTimePicker
+                                mode="time"
+                                display="default"
+                                value={date || new Date()}
+                                onChange={onTimeChange}
                             />
                         )}
                     </View>
@@ -178,12 +228,14 @@ const CARealInformation: React.FC = () => {
                             <View>
                                 <Text className={`px-2 text-lg font-medium mb-2 ${isDarkMode ? "text-white" : ""}`}>Point de rendez-vous</Text>
                                 <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-gray-100"} p-3 rounded-md space-x-2 mb-4`}>
-                                    <TextInput
+                                    <AddressAutocomplete
+                                        onSelect={(result: AddressAutocompleteResult) => {
+                                            setMeetingPoint(result.address);
+                                            updateForm({ meetingPoint: result.address });
+                                        }}
                                         placeholder="Rechercher une adresse"
-                                        placeholderTextColor={isDarkMode ? "#9EA1AB" : "#737373"}
-                                        className={`${isDarkMode ? "bg-[#1D1E20] text-white border-white" : "bg-white text-black border-[#065C98]"} border rounded-md px-4 py-3`}
-                                        value={meetingPoint}
-                                        onChangeText={setMeetingPoint}
+                                        isDarkMode={isDarkMode}
+                                        initialValue={meetingPoint}
                                     />
                                 </View>
                             </View>
