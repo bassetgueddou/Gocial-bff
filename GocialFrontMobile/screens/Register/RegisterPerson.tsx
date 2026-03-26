@@ -58,7 +58,7 @@ const RegisterPerson: React.FC = () => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const maxDate = new Date();
-    maxDate.setFullYear(maxDate.getFullYear() - 13);
+    maxDate.setFullYear(maxDate.getFullYear() - 18);
     const minDate = new Date('1920-01-01');
 
     const handleDateChange = (event: DateTimePickerEvent, date?: Date) => {
@@ -72,7 +72,7 @@ const RegisterPerson: React.FC = () => {
             const ageYears = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 365.25));
             setErrors(prev => {
                 const u = { ...prev };
-                if (ageYears < 13) { u.birth_date = 'Vous devez avoir au moins 13 ans'; } else { delete u.birth_date; }
+                if (ageYears < 18) { u.birth_date = 'Tu dois avoir au moins 18 ans 🥲'; } else { delete u.birth_date; }
                 return u;
             });
         }
@@ -203,10 +203,8 @@ const RegisterPerson: React.FC = () => {
                             {selectedDate ? formatDisplayDate(selectedDate) : 'JJ/MM/AAAA'}
                         </Text>
                     </TouchableOpacity>
-                    {errors.birth_date ? (
+                    {errors.birth_date && (
                         <Text className="text-red-700 text-xs mt-1 ml-1">{errors.birth_date}</Text>
-                    ) : (
-                        <Text className="text-sm mt-1">Tu dois avoir au moins 13 ans</Text>
                     )}
                     {showDatePicker && (
                         <DateTimePicker
