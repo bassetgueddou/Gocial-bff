@@ -13,8 +13,13 @@ import {
     Pressable,
 } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    runOnJS,
+} from "react-native-reanimated";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import { useFilters } from "../../src/contexts/FilterContext";
 
@@ -120,15 +125,33 @@ interface WhatModalProps {
 const WhatModal: React.FC<WhatModalProps> = ({ visible, onClose }) => {
     const { setCategory } = useFilters();
     const [selectedCategory, setSelectedCategory] = useState<string>("outings");
+
+    const { isDarkMode } = useTheme();
+    const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [selectAll, setSelectAll] = useState<boolean>(false);
+
+    // Animation values
+    const translateY = useSharedValue(0);
+    const CLOSE_THRESHOLD = 150;
+    const VELOCITY_THRESHOLD = 500;
+
+    const handleCloseModal = () => {
+        // Animate out and close
+        translateY.value = withTiming(height, { duration: 200 }, () => {
+            runOnJS(onClose)();
+        });
+    };
+
+    const handleReset = () => {
+        translateY.value = withTiming(0, { duration: 300 });
+    };
+
     const handleCategoryChange = (categoryId: string) => {
         setSelectedCategory(categoryId);
         setSelectedItems([]);
         setSelectAll(false);
     };
-
-    const { isDarkMode } = useTheme();
-    const [selectedItems, setSelectedItems] = useState<string[]>([]);
-    const [selectAll, setSelectAll] = useState(false);
 
     // Filtrer les activités selon la catégorie sélectionnée
     const filteredActivities = activities.filter(activity => activity.category === selectedCategory);
@@ -148,18 +171,46 @@ const WhatModal: React.FC<WhatModalProps> = ({ visible, onClose }) => {
         setSelectAll(!selectAll);
     };
 
+    // Style animé pour la modal
+    const animatedModalStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    // Réinitialiser l'animation quand la modal s'ouvre
+    React.useEffect(() => {
+        if (visible) {
+            translateY.value = height;
+            translateY.value = withTiming(0, { duration: 500 });
+        }
+    }, [visible]);
+
     const panGesture = Gesture.Pan()
         .onUpdate((event) => {
-            if (event.translationY > 100) {
-                runOnJS(onClose)(); // Utilisation de runOnJS pour éviter l'erreur
+            // Limiter le mouvement vers le haut (on peut juste remonter un peu)
+            if (event.translationY < -50) {
+                translateY.value = -50;
+            } else if (event.translationY > 0) {
+                // Permettre le mouvement vers le bas
+                translateY.value = event.translationY;
+            }
+        })
+        .onEnd((event) => {
+            // Vérifier si on a atteint le seuil de fermeture (distance ou vélocité)
+            if (event.translationY > CLOSE_THRESHOLD || event.velocityY > VELOCITY_THRESHOLD) {
+                runOnJS(handleCloseModal)();
+            } else {
+                // Revenir à la position initiale
+                runOnJS(handleReset)();
             }
         });
 
     return (
-        <Modal visible={visible} animationType="slide" transparent>
+        <Modal visible={visible} animationType="none" transparent>
             <GestureDetector gesture={panGesture}>
                 <View className="flex-1 justify-end bg-black/50">
-                    <View className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
+                    <Animated.View
+                        style={[animatedModalStyle]}
+                        className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
                         {/* Barre pour glisser vers le bas */}
                         <View className="items-center mb-3">
                             <View className="w-10 h-1 bg-gray-400 rounded-full" />
@@ -282,7 +333,7 @@ const WhatModal: React.FC<WhatModalProps> = ({ visible, onClose }) => {
                                 <Text className="text-white text-base">Valider</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
                 </View>
             </GestureDetector>
         </Modal>

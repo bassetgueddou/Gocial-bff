@@ -7,10 +7,16 @@ import {
     FlatList,
     ActivityIndicator,
     Image,
+    Dimensions,
 } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    runOnJS,
+} from "react-native-reanimated";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import Premium from "../Notification/Premium";
 import TypeMessageView from "./TypeMessageView";
@@ -27,6 +33,8 @@ type RootStackParamList = {
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
+const { width, height } = Dimensions.get("window");
+
 interface MessageModalProps {
     visible: boolean;
     onClose: () => void;
@@ -41,10 +49,39 @@ const MessageModal: React.FC<MessageModalProps> = ({ visible, onClose }) => {
     const [isRequestMessageViewVisible, setIsRequestMessageViewVisible] = useState(false);
     const [isNewMessageViewVisible, setIsNewMessageViewVisible] = useState(false);
 
+    // Animation values
+    const translateY = useSharedValue(0);
+    const CLOSE_THRESHOLD = 150;
+    const VELOCITY_THRESHOLD = 500;
+
+    const handleCloseModal = () => {
+        // Animate out and close
+        translateY.value = withTiming(height, { duration: 200 }, () => {
+            runOnJS(onClose)();
+        });
+    };
+
+    const handleReset = () => {
+        translateY.value = withTiming(0, { duration: 300 });
+    };
+
     const panGesture = Gesture.Pan()
         .onUpdate((event) => {
-            if (event.translationY > 100) {
-                runOnJS(onClose)();
+            // Limiter le mouvement vers le haut (on peut juste remonter un peu)
+            if (event.translationY < -50) {
+                translateY.value = -50;
+            } else if (event.translationY > 0) {
+                // Permettre le mouvement vers le bas
+                translateY.value = event.translationY;
+            }
+        })
+        .onEnd((event) => {
+            // Vérifier si on a atteint le seuil de fermeture (distance ou vélocité)
+            if (event.translationY > CLOSE_THRESHOLD || event.velocityY > VELOCITY_THRESHOLD) {
+                runOnJS(handleCloseModal)();
+            } else {
+                // Revenir à la position initiale
+                runOnJS(handleReset)();
             }
         });
 
@@ -68,11 +105,26 @@ const MessageModal: React.FC<MessageModalProps> = ({ visible, onClose }) => {
         return d.format("DD/MM/YYYY");
     };
 
+    // Style animé pour la modal
+    const animatedModalStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    // Réinitialiser l'animation quand la modal s'ouvre
+    React.useEffect(() => {
+        if (visible) {
+            translateY.value = height;
+            translateY.value = withTiming(0, { duration: 500 });
+        }
+    }, [visible]);
+
     return (
-        <Modal visible={visible} animationType="slide" transparent>
+        <Modal visible={visible} animationType="none" transparent>
             <GestureDetector gesture={panGesture}>
                 <View className="flex-1 justify-end">
-                    <View className={`w-full h-[88%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
+                    <Animated.View
+                        style={[animatedModalStyle]}
+                        className={`w-full h-[88%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
                         {isRequestMessageViewVisible ? (
                             <RequestMessageView onClose={() => setIsRequestMessageViewVisible(false)} />
                         ) : selectedPartner ? (
@@ -167,7 +219,7 @@ const MessageModal: React.FC<MessageModalProps> = ({ visible, onClose }) => {
                                 )}
                             </>
                         )}
-                    </View>
+                    </Animated.View>
                 </View>
             </GestureDetector>
         </Modal>

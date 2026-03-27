@@ -8,8 +8,13 @@ import {
     Switch,
 } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    runOnJS,
+} from "react-native-reanimated";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import { useFilters } from "../../src/contexts/FilterContext";
 
@@ -38,18 +43,62 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose }) => {
     const [onlyAsso, setOnlyAsso] = useState<boolean>(false);
     const [onlyIndividuals, setOnlyIndividuals] = useState<boolean>(true);
 
+    // Animation values
+    const translateY = useSharedValue(0);
+    const CLOSE_THRESHOLD = 150;
+    const VELOCITY_THRESHOLD = 500;
+
+    const handleCloseModal = () => {
+        // Animate out and close
+        translateY.value = withTiming(height, { duration: 200 }, () => {
+            runOnJS(onClose)();
+        });
+    };
+
+    const handleReset = () => {
+        translateY.value = withTiming(0, { duration: 300 });
+    };
+
     const panGesture = Gesture.Pan()
         .onUpdate((event) => {
-            if (event.translationY > 100) {
-                runOnJS(onClose)(); // Utilisation de runOnJS pour éviter l'erreur
+            // Limiter le mouvement vers le haut (on peut juste remonter un peu)
+            if (event.translationY < -50) {
+                translateY.value = -50;
+            } else if (event.translationY > 0) {
+                // Permettre le mouvement vers le bas
+                translateY.value = event.translationY;
+            }
+        })
+        .onEnd((event) => {
+            // Vérifier si on a atteint le seuil de fermeture (distance ou vélocité)
+            if (event.translationY > CLOSE_THRESHOLD || event.velocityY > VELOCITY_THRESHOLD) {
+                runOnJS(handleCloseModal)();
+            } else {
+                // Revenir à la position initiale
+                runOnJS(handleReset)();
             }
         });
 
+    // Style animé pour la modal
+    const animatedModalStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    // Réinitialiser l'animation quand la modal s'ouvre
+    React.useEffect(() => {
+        if (visible) {
+            translateY.value = height;
+            translateY.value = withTiming(0, { duration: 500 });
+        }
+    }, [visible]);
+
     return (
-        <Modal visible={visible} animationType="slide" transparent>
+        <Modal visible={visible} animationType="none" transparent>
             <GestureDetector gesture={panGesture}>
                 <View className="flex-1 justify-end bg-black/50">
-                    <View className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
+                    <Animated.View
+                        style={[animatedModalStyle]}
+                        className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
                         {/* Barre pour glisser vers le bas */}
                         <View className="items-center mb-3">
                             <View className="w-10 h-1 bg-gray-400 rounded-full" />
@@ -169,7 +218,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose }) => {
                                 <Text className="text-white text-base">Rechercher</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
                 </View>
             </GestureDetector>
         </Modal>

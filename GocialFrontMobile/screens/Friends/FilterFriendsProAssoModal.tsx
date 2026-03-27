@@ -5,10 +5,16 @@ import {
     Modal,
     TouchableOpacity,
     TextInput,
+    Dimensions,
 } from "react-native";
 import { GestureDetector, Gesture, ScrollView } from "react-native-gesture-handler";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    runOnJS,
+} from "react-native-reanimated";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import Slider from "@react-native-community/slider";
 import FavoriteActivityView from './FavoriteActivityView';
@@ -24,6 +30,8 @@ const participantTypes: string[] = [
     "Asso",
 ];
 
+const { width, height } = Dimensions.get("window");
+
 const FilterFriendsProAssoModal: React.FC<FilterFriendsProAssoModalProps> = ({ visible, onClose }) => {
     const { isDarkMode } = useTheme();
     const [selectedType, setSelectedType] = useState<string>("Tout le monde");
@@ -32,10 +40,39 @@ const FilterFriendsProAssoModal: React.FC<FilterFriendsProAssoModalProps> = ({ v
     const [selectedOption, setSelectedOption] = useState("around"); // "around" ou "city"
     const [radius, setRadius] = useState(10);
 
+    // Animation values
+    const translateY = useSharedValue(0);
+    const CLOSE_THRESHOLD = 150;
+    const VELOCITY_THRESHOLD = 500;
+
+    const handleCloseModal = () => {
+        // Animate out and close
+        translateY.value = withTiming(height, { duration: 200 }, () => {
+            runOnJS(onClose)();
+        });
+    };
+
+    const handleReset = () => {
+        translateY.value = withTiming(0, { duration: 300 });
+    };
+
     const panGesture = Gesture.Pan()
         .onUpdate((event) => {
-            if (event.translationY > 100) {
-                runOnJS(onClose)(); // Utilisation de runOnJS pour éviter l'erreur
+            // Limiter le mouvement vers le haut (on peut juste remonter un peu)
+            if (event.translationY < -50) {
+                translateY.value = -50;
+            } else if (event.translationY > 0) {
+                // Permettre le mouvement vers le bas
+                translateY.value = event.translationY;
+            }
+        })
+        .onEnd((event) => {
+            // Vérifier si on a atteint le seuil de fermeture (distance ou vélocité)
+            if (event.translationY > CLOSE_THRESHOLD || event.velocityY > VELOCITY_THRESHOLD) {
+                runOnJS(handleCloseModal)();
+            } else {
+                // Revenir à la position initiale
+                runOnJS(handleReset)();
             }
         });
 
@@ -45,12 +82,26 @@ const FilterFriendsProAssoModal: React.FC<FilterFriendsProAssoModalProps> = ({ v
         setViewFavoriteActivityVisible(false);
     };
 
+    // Style animé pour la modal
+    const animatedModalStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+    }));
+
+    // Réinitialiser l'animation quand la modal s'ouvre
+    React.useEffect(() => {
+        if (visible) {
+            translateY.value = height;
+            translateY.value = withTiming(0, { duration: 500 });
+        }
+    }, [visible]);
+
     return (
-        <Modal visible={visible} animationType="slide" transparent>
+        <Modal visible={visible} animationType="none" transparent>
             <GestureDetector gesture={panGesture}>
                 <View className="flex-1 justify-end bg-black/50">
-
-                    <View className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl`}>
+                    <Animated.View
+                        style={[animatedModalStyle]}
+                        className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl`}>
                         {/* Barre pour glisser vers le bas */}
                         <View className="items-center mb-3 p-5">
                             <View className="w-10 h-1 bg-gray-400 rounded-full" />
@@ -183,7 +234,7 @@ const FilterFriendsProAssoModal: React.FC<FilterFriendsProAssoModalProps> = ({ v
                         ) : (
                             <FavoriteActivityView onClose={onClose} onBack={handleBackFromFavorite} />
                         )}
-                    </View>
+                    </Animated.View>
                 </View>
             </GestureDetector>
         </Modal>
