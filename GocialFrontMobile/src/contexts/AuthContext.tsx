@@ -45,17 +45,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
         if (token) {
-          // We have a token, try to get fresh user data from the server
-          const { user: freshUser } = await authService.getMe();
-          setUser(freshUser);
+          try {
+            // We have a token, try to get fresh user data from the server
+            const { user: freshUser } = await authService.getMe();
+            setUser(freshUser);
+          } catch {
+            // API failed — try cached user as fallback (network issue, not necessarily expired)
+            const cachedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
+            if (cachedUser) {
+              if (__DEV__) console.log('[Auth] getMe failed, using cached user');
+              setUser(JSON.parse(cachedUser));
+            } else {
+              // No cached user either — clear everything
+              await Promise.all([
+                AsyncStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN),
+                AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
+                AsyncStorage.removeItem(STORAGE_KEYS.USER),
+              ]);
+              setUser(null);
+            }
+          }
         }
-      } catch (err) {
-        // Token expired or invalid — just clear everything
-        await Promise.all([
-          AsyncStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN),
-          AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
-          AsyncStorage.removeItem(STORAGE_KEYS.USER),
-        ]);
+      } catch {
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -68,10 +79,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = useCallback(async (data: LoginData) => {
     const response = await authService.login(data);
 
-    // Store tokens
-    await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.access_token);
-    await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refresh_token);
-    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
+    await Promise.all([
+      AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.access_token),
+      AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refresh_token),
+      AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user)),
+    ]);
 
     setUser(response.user);
   }, []);
@@ -79,9 +91,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const register = useCallback(async (data: RegisterData) => {
     const response = await authService.register(data);
 
-    await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.access_token);
-    await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refresh_token);
-    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
+    await Promise.all([
+      AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.access_token),
+      AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refresh_token),
+      AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user)),
+    ]);
 
     setUser(response.user);
   }, []);
