@@ -1,4 +1,5 @@
-﻿import { View, Text, Image, SafeAreaView, TouchableOpacity } from "react-native";
+﻿import { View, Text, Image, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../ThemeContext";
 import LinearGradient from "react-native-linear-gradient";
 import React, { useState } from "react";
@@ -39,7 +40,7 @@ const HeaderMyDiary: React.FC<HeaderMyDiaryProps> = ({ title, filter = "all", on
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
         >
-            <SafeAreaView>
+            <SafeAreaView edges={['top']}>
                 <MessageModal visible={modalMessageVisible} onClose={() => setModalMessageVisible(false)} />
                 <FilterDiaryModal
                     visible={modalFilterDiaryVisible}

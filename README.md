@@ -82,7 +82,6 @@ cd GocialFrontMobile
 yarn install
 npx react-native run-android    # Android
 npx react-native run-ios        # iOS
-npx react-native start --reset-cache #metro
 ```
 
 > L'émulateur Android ne peut pas accéder à `localhost` directement — l'app utilise `10.0.2.2:5000` automatiquement. Pour un appareil physique, modifier l'IP dans `src/config.ts`.
@@ -146,6 +145,7 @@ npx tsc --noEmit                 # Vérification TypeScript (doit être 0 erreur
 yarn web                         # Version web (Vite)
 npx react-native run-android     # Lancer sur Android
 npx react-native run-ios         # Lancer sur iOS
+npx react-native start --reset-cache #metro
 ```
 
 ### Docker
@@ -194,7 +194,8 @@ Toutes les routes sous `/api`. Auth via `Authorization: Bearer <token>`.
 | Auth | `/auth` | register, login, refresh, me, change-password |
 | Users | `/users` | profil, update, avatar, search |
 | Activities | `/activities` | CRUD, like, participate, top 3 |
-| Friends | `/friends` | request, accept, reject, block, list |
+|
+ Friends | `/friends` | request, accept, reject, block, list |
 | Messages | `/messages` | conversations, send, read, unread count |
 | Notifications | `/notifications` | list, mark read, delete |
 
@@ -221,7 +222,6 @@ Accessible sur `http://localhost:8080` quand Docker tourne.
 
 emulator:
 "$LOCALAPPDATA/Android/Sdk/emulator/emulator" -avd Pixel_6a &
-
 ## License
 
 All rights reserved. Private project.
