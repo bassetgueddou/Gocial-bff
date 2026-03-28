@@ -101,15 +101,15 @@ const RegisterPerson: React.FC = () => {
             return;
         }
 
-        // Vérifier âge minimum 13 ans
+        // Vérifier âge minimum 18 ans
         const today = new Date();
         let age = today.getFullYear() - year;
         if (today.getMonth() < month - 1 || (today.getMonth() === month - 1 && today.getDate() < day)) {
             age--;
         }
 
-        if (age < 13) {
-            setErrors(prev => ({ ...prev, birth_date: 'Tu dois avoir au moins 13 ans' }));
+        if (age < 18) {
+            setErrors(prev => ({ ...prev, birth_date: 'Tu dois avoir au moins 18 ans' }));
             setBirthDate('');
             return;
         }
@@ -244,6 +244,8 @@ const RegisterPerson: React.FC = () => {
                     </View>
                     {errors.birth_date ? (
                         <Text className="text-red-700 text-xs mt-1 ml-1">{errors.birth_date}</Text>
+                    ) : (
+                        <Text className="text-sm mt-1">Tu dois avoir au moins 18 ans</Text>
                     )}
                 </View>
 
