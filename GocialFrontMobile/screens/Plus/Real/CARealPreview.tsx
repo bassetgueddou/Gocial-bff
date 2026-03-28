@@ -9,6 +9,7 @@ import Toast from "react-native-toast-message";
 import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
 import { activityService } from "../../../src/services/activities";
 import { useAuth } from "../../../src/contexts/AuthContext";
+import { t } from "../../../src/utils/translations";
 
 type RootStackParamList = {
     CATitle: undefined;
@@ -35,8 +36,8 @@ const CARealPreview: React.FC = () => {
     const infoData = [
         { label: "Type d'activité", value: formData.selectedActivityName || formData.category || "\u2014" },
         { label: "Âge des participants", value: `${formData.minAge ?? 18}-${formData.maxAge ?? 122}` },
-        { label: "Types de participants", value: formData.genderRestriction === "all" ? "Tout le monde" : formData.genderRestriction || "Tout le monde" },
-        { label: "Visibilité", value: formData.visibility === "public" ? "Publique" : formData.visibility === "friends" ? "Mes amis Gocial" : formData.visibility || "Publique" },
+        { label: "Types de participants", value: t.genderRestriction(formData.genderRestriction) },
+        { label: "Visibilité", value: t.visibility(formData.visibility) || "Publique" },
         { label: "Validation des participants", value: formData.require_approval ? "Manuelle" : "Automatique" },
     ];
 

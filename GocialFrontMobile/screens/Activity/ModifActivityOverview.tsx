@@ -12,6 +12,7 @@ import Toast from "react-native-toast-message";
 import { activityService } from "../../src/services/activities";
 import { API_URL } from "../../src/config";
 import type { Activity } from "../../src/types";
+import { t } from "../../src/utils/translations";
 
 type RootStackParamList = {
     ModifActivityOverview: { activityId: number };
@@ -161,11 +162,11 @@ const ModifActivityOverview: React.FC = () => {
         : null;
 
     const infoItems = [
-        { label: "Type d'activité", value: activity.category || activity.activity_type || '-' },
+        { label: "Type d'activité", value: activity.category || t.activityType(activity.activity_type) },
         { label: "Âge des participants", value: `${activity.min_age}-${activity.max_age}` },
-        { label: "Types de participants", value: activity.gender_restriction === 'all' ? 'Tout le monde' : activity.gender_restriction },
-        { label: "Visibilité", value: activity.visibility === 'public' ? 'Publique' : activity.visibility === 'friends' ? 'Amis' : 'Privée' },
-        { label: "Validation des participants", value: activity.validation_type === 'auto' ? 'Automatique' : 'Manuelle' },
+        { label: "Types de participants", value: t.genderRestriction(activity.gender_restriction) },
+        { label: "Visibilité", value: t.visibility(activity.visibility) },
+        { label: "Validation des participants", value: t.validationType(activity.validation_type) },
     ];
 
     const participantsList = activity.participants || [];

@@ -11,6 +11,7 @@ import type { NominatimResult, AddressAutocompleteResult } from '../types';
 
 interface AddressAutocompleteProps {
   onSelect: (result: AddressAutocompleteResult) => void;
+  onChangeText?: (text: string) => void;
   placeholder?: string;
   className?: string;
   isDarkMode: boolean;
@@ -27,6 +28,7 @@ function extractCity(address: NominatimResult['address']): string {
 
 const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   onSelect,
+  onChangeText: onChangeTextProp,
   placeholder = 'Rechercher une adresse',
   className,
   isDarkMode,
@@ -74,6 +76,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   const handleChangeText = useCallback(
     (text: string) => {
       setQuery(text);
+      onChangeTextProp?.(text);
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -81,7 +84,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         searchAddress(text);
       }, DEBOUNCE_MS);
     },
-    [searchAddress],
+    [searchAddress, onChangeTextProp],
   );
 
   const handleSelect = useCallback(

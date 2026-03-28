@@ -147,6 +147,7 @@ const CAVisioInformation: React.FC = () => {
                                 setCity(result.city || result.address);
                                 updateForm({ city: result.city || result.address });
                             }}
+                            onChangeText={setCity}
                             placeholder="Rechercher une ville"
                             isDarkMode={isDarkMode}
                             initialValue={city}
