@@ -13,6 +13,7 @@ import Toast from 'react-native-toast-message';
 import { activityService } from "../../src/services/activities";
 import { API_URL } from "../../src/config";
 import type { Activity } from "../../src/types";
+import { t } from "../../src/utils/translations";
 
 type RootStackParamList = {
     ActivityOverview: { activityId: number };
@@ -141,12 +142,12 @@ const ActivityOverview: React.FC = () => {
     const initialRegion: Region | undefined = hasCoords ? { latitude: activity.latitude!, longitude: activity.longitude!, latitudeDelta: 0.01, longitudeDelta: 0.01 } : undefined;
 
     const infoData = [
-        { label: "Type d'activité", value: activity.category || activity.activity_type },
+        { label: "Type d'activité", value: activity.category || t.activityType(activity.activity_type) },
         { label: "Âge", value: `${activity.min_age || 18}-${activity.max_age || 99}` },
-        { label: "Participants", value: activity.gender_restriction === 'girls_only' ? 'Filles uniquement' : 'Tout le monde' },
-        { label: "Visibilité", value: activity.visibility === 'public' ? 'Publique' : activity.visibility === 'friends' ? 'Amis' : 'Privée' },
-        { label: "Validation", value: activity.validation_type === 'manual' ? 'Manuelle' : 'Automatique' },
-        { label: "Statut", value: activity.status === 'active' ? 'Active' : activity.status },
+        { label: "Participants", value: t.genderRestriction(activity.gender_restriction) },
+        { label: "Visibilité", value: t.visibility(activity.visibility) },
+        { label: "Validation", value: t.validationType(activity.validation_type) },
+        { label: "Statut", value: t.activityStatus(activity.status) },
     ];
 
     const isParticipating = participationStatus === 'validated' || participationStatus === 'pending';
