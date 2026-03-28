@@ -122,10 +122,10 @@ def register():
         try:
             user.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
             
-            # Quick age check - must be at least 13 (COPPA compliance-ish)
+            # Quick age check - must be at least 18
             age = (datetime.utcnow().date() - user.birth_date).days // 365
-            if age < 13:
-                return jsonify({'error': 'Vous devez avoir au moins 13 ans'}), 400
+            if age < 18:
+                return jsonify({'error': 'Tu dois avoir au moins 18 ans'}), 400
         except ValueError:
             return jsonify({'error': 'Format de date invalide (AAAA-MM-JJ attendu)'}), 400
     
