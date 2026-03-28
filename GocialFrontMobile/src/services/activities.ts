@@ -123,7 +123,7 @@ export const activityService = {
     file: { uri: string; type: string; name: string }
   ): Promise<{ message: string; image_url: string }> => {
     const formData = new FormData();
-    formData.append('file', file as unknown as Blob);
+    formData.append('image', file as unknown as Blob);
 
     const response = await api.post(`/api/activities/${activityId}/image`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

@@ -195,7 +195,14 @@ def upload_avatar():
 
     if not allowed_file(file.filename):
         return jsonify({'error': 'Type de fichier non autorisé'}), 400
-    
+
+    # Vérifier la taille du fichier (max 300 Ko)
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    if file_size > 300 * 1024:
+        return jsonify({'error': "L'image est trop volumineuse (max 300 Ko)"}), 400
+
     # Generate safe filename
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = f'avatar_{user_id}_{int(datetime.utcnow().timestamp())}.{ext}'
