@@ -21,8 +21,8 @@ const getPasswordStrength = (pwd: string): number => {
     if (/[^a-zA-Z0-9]/.test(pwd)) score++;
     return score;
 };
-const strengthColors = ['#EF4444', '#F97316', '#EAB308', '#22C55E'];
-const strengthLabels = ['Très faible', 'Faible', 'Moyen', 'Fort'];
+const strengthColors = ['#EF4444', '#F97316', '#EAB308', '#84CC16', '#22C55E'];
+const strengthLabels = ['Très faible', 'Faible', 'Moyen','Presque fort', 'Fort'];
 
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
@@ -368,7 +368,7 @@ const RegisterPerson: React.FC = () => {
                     {password.length > 0 && (
                         <View className="mt-2">
                             <View className="flex-row gap-1 mt-1">
-                                {[0, 1, 2, 3].map((i) => (
+                                {[0, 1, 2, 3,4].map((i) => (
                                     <View
                                         key={i}
                                         className="flex-1 h-1 rounded-full"
