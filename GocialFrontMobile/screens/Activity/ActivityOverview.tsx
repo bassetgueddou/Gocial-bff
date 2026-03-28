@@ -143,10 +143,10 @@ const ActivityOverview: React.FC = () => {
 
     const infoData = [
         { label: "Type d'activité", value: activity.category || t.activityType(activity.activity_type) },
-        { label: "Âge", value: `${activity.min_age || 18}-${activity.max_age || 99}` },
-        { label: "Participants", value: t.genderRestriction(activity.gender_restriction) },
+        { label: "Âge des participants", value: `${activity.min_age || 18}-${activity.max_age || 99}` },
+        { label: "Types de participants", value: t.genderRestriction(activity.gender_restriction) },
         { label: "Visibilité", value: t.visibility(activity.visibility) },
-        { label: "Validation", value: t.validationType(activity.validation_type) },
+        { label: "Validation des participants", value: t.validationType(activity.validation_type) },
         { label: "Statut", value: t.activityStatus(activity.status) },
     ];
 

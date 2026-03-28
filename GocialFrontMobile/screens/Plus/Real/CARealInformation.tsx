@@ -158,6 +158,7 @@ const CARealInformation: React.FC = () => {
                 <View className={`${isDarkMode ? "bg-black" : "bg-gray-100"} p-3 rounded-md space-x-2 mb-4`}>
                     <AddressAutocomplete
                         onSelect={handleAddressSelect}
+                        onChangeText={setAddress}
                         placeholder="Rechercher une adresse"
                         isDarkMode={isDarkMode}
                         initialValue={address}
@@ -233,6 +234,7 @@ const CARealInformation: React.FC = () => {
                                             setMeetingPoint(result.address);
                                             updateForm({ meetingPoint: result.address });
                                         }}
+                                        onChangeText={setMeetingPoint}
                                         placeholder="Rechercher une adresse"
                                         isDarkMode={isDarkMode}
                                         initialValue={meetingPoint}
