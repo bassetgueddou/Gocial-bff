@@ -74,6 +74,10 @@ const Login: React.FC = () => {
       await login({ email: email.trim().toLowerCase(), password });
       // Navigation handled automatically by AuthContext → AppNavigator
     } catch (err: unknown) {
+      if (__DEV__) {
+        const debugErr = err as { response?: { status?: number; data?: unknown }; message?: string };
+        console.log('[Login] Error:', debugErr?.response?.status, debugErr?.response?.data, debugErr?.message);
+      }
       const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
       const message =
         apiErr?.response?.data?.error ||

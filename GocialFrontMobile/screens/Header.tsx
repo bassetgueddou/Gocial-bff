@@ -1,4 +1,5 @@
-import { View, Text, Image, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import LinearGradient from "react-native-linear-gradient";
 import React, { useState } from "react";
 import MessageModal from "./Message/MessageModal";
@@ -35,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
             start={{ x: 0, y: 0 }} // Début du gradient en haut
             end={{ x: 1, y: 1 }} // Fin du gradient en bas
         >
-            <SafeAreaView>
+            <SafeAreaView edges={['top']}>
                 <MessageModal visible={modalMessageVisible} onClose={() => setModalMessageVisible(false)} />
 
                 <View className="flex-row items-center justify-between p-4">

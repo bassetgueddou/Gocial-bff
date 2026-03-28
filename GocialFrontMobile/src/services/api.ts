@@ -41,6 +41,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+// Public auth endpoints — never attempt token refresh on these
+const isPublicAuthEndpoint = (url?: string): boolean => {
+  const publicPaths = ['/api/auth/login', '/api/auth/register', '/api/auth/check-email', '/api/auth/check-pseudo'];
+  return publicPaths.some(path => url?.includes(path));
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -49,7 +55,8 @@ api.interceptors.response.use(
     };
 
     // If we get a 401 and haven't already retried, try refreshing the token
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh for public auth endpoints — let their errors pass through directly
+    if (error.response?.status === 401 && !originalRequest._retry && !isPublicAuthEndpoint(originalRequest.url)) {
       if (isRefreshing) {
         // Another refresh is already in flight, queue this request
         return new Promise((resolve, reject) => {

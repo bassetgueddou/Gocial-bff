@@ -144,7 +144,7 @@ def register():
     
     return jsonify({
         'message': 'Compte créé avec succès',
-        'user': user.to_dict(include_private=True),
+        'user': user.to_dict(include_private=True, include_settings=True),
         'access_token': access_token,
         'refresh_token': refresh_token,
     }), 201
