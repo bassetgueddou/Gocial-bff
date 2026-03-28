@@ -11,8 +11,9 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { userService } from "../../src/services/users";
 import { activityService } from "../../src/services/activities";
 import { API_URL } from "../../src/config";
-import type { Activity } from "../../src/types";
+import type { Activity, AddressAutocompleteResult } from "../../src/types";
 import Toast from "react-native-toast-message";
+import AddressAutocomplete from "../../src/components/AddressAutocomplete";
 
 const fallbackImage = require("../../img/billard-exemple.jpg");
 
@@ -329,6 +330,10 @@ const EditIdentity: React.FC = () => {
         }
     };
 
+    const handleCitySelect = useCallback((result: AddressAutocompleteResult) => {
+        setCity(result.city || result.address);
+    }, []);
+
     const renderTextInput = (label: string, value: string, setValue: (text: string) => void, editable: boolean = true) => {
         return (
             <View className="mt-2 w-full">
@@ -418,7 +423,20 @@ const EditIdentity: React.FC = () => {
             >
                 {renderTextInput("Prénom", firstname, setFirstname)}
                 {renderTextInput("Nom", lastname, setLastname)}
-                {renderTextInput("Ville", city, setCity)}
+                {/* Ville — AddressAutocomplete */}
+                <View className="mt-2 w-full">
+                    <Text className={`font-bold text-lg px-4 mb-2 ${isDarkMode ? "text-white" : "text-black"}`}>
+                        Ville
+                    </Text>
+                    <View className={`${isDarkMode ? "bg-[#1D1E20]" : "bg-[#F2F5FA]"} py-4 px-6 rounded-lg w-full`}>
+                        <AddressAutocomplete
+                            onSelect={handleCitySelect}
+                            placeholder="Rechercher une ville"
+                            isDarkMode={isDarkMode}
+                            initialValue={city}
+                        />
+                    </View>
+                </View>
                 {renderTextAgeInput("Age", birthDate, setBirthDate)}
                 {renderTextInput("Genre", gender, setGender, false)}
 

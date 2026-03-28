@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   Animated,
+  Image
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -17,6 +18,7 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { useTheme } from "../ThemeContext";
 import Toast from "react-native-toast-message";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import type { InlineErrors } from "../../src/types";
 
 type RootStackParamList = {
@@ -121,20 +123,13 @@ const Login: React.FC = () => {
           >
             {/* Logo + sous-titre */}
             <View className="items-center mb-10 mt-8">
-              <View
-                style={{
-                  width: 90,
-                  height: 90,
-                  borderRadius: 22,
-                  backgroundColor: "#065C98",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "white", fontSize: 34, fontWeight: "bold" }}>G</Text>
-              </View>
+              <Image
+                source={require('../../img/ic_launcher.png')}
+                className="w-36 h-36 rounded-2xl"
+                resizeMode="contain"
+              />
               <Text
-                className={`text-3xl font-bold mt-4 ${isDarkMode ? "text-white" : "text-black"}`}
+                className={`text-3xl font-bold ${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"}`}
               >
                 Gocial
               </Text>
@@ -146,20 +141,18 @@ const Login: React.FC = () => {
             {/* Bouton Google */}
             <TouchableOpacity
               onPress={handleGoogleLogin}
-              className={`flex-row items-center justify-center rounded-xl py-3.5 mb-4 border ${
-                isDarkMode
-                  ? "border-gray-700 bg-[#1D1E20]"
-                  : "border-gray-200 bg-white"
-              }`}
+              className={`flex-row items-center justify-center rounded-xl py-3.5 mb-4 border ${isDarkMode
+                ? "border-gray-700 bg-[#1D1E20]"
+                : "border-gray-200 bg-white"
+                }`}
             >
-              <Ionicons
-                name="logo-google"
-                size={20}
-                color={isDarkMode ? "#ffffff" : "#000000"}
-                style={{ marginRight: 10 }}
+              <Image
+                source={require('../../img/google-logo.png')}
+                className="w-5 h-5 mr-4"
+                resizeMode="contain"
               />
               <Text
-                className={`text-base font-medium ${isDarkMode ? "text-white" : "text-black"}`}
+                className={`text-base font-medium text-center ${isDarkMode ? "text-white" : "text-black"}`}
               >
                 Continuer avec Google
               </Text>
@@ -170,7 +163,7 @@ const Login: React.FC = () => {
               <View
                 className={`flex-1 h-px ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}
               />
-              <Text className="mx-3 text-gray-400 text-sm">ou</Text>
+              <Text className="mx-3 text-gray-600 text-sm">ou</Text>
               <View
                 className={`flex-1 h-px ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}
               />
@@ -185,6 +178,7 @@ const Login: React.FC = () => {
               </View>
             ) : null}
 
+            <Text className="mb-1 ml-1">Adresse email</Text>
             {/* Input email */}
             <TextInput
               value={email}
@@ -193,19 +187,18 @@ const Login: React.FC = () => {
                 setErrorMessage(null);
                 clearError('email');
               }}
-              placeholder="Adresse email"
               placeholderTextColor={isDarkMode ? "#6B7280" : "#9CA3AF"}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              className={`rounded-xl px-4 py-3.5 text-base ${errors.email ? 'mb-1' : 'mb-4'} ${
-                isDarkMode
-                  ? "bg-[#1D1E20] text-white"
-                  : "bg-[#F2F5FA] text-black"
-              }`}
+              className={`rounded-xl px-4 py-3.5 text-base leading-tight ${errors.email ? 'mb-1' : 'mb-4'} ${isDarkMode
+                ? "bg-[#1D1E20] text-white"
+                : "bg-[#F2F5FA] text-black"
+                }`}
             />
             {errors.email ? <Text className="text-red-500 text-xs mb-3 ml-1">{errors.email}</Text> : null}
 
+            <Text className="mb-1 ml-1">Mot de passe</Text>
             {/* Input mot de passe */}
             <View className={`relative ${errors.password ? 'mb-1' : 'mb-4'}`}>
               <TextInput
@@ -215,24 +208,22 @@ const Login: React.FC = () => {
                   setErrorMessage(null);
                   clearError('password');
                 }}
-                placeholder="Mot de passe"
                 placeholderTextColor={isDarkMode ? "#6B7280" : "#9CA3AF"}
                 secureTextEntry={!showPassword}
-                className={`rounded-xl px-4 py-3.5 text-base pr-14 ${
-                  isDarkMode
-                    ? "bg-[#1D1E20] text-white"
-                    : "bg-[#F2F5FA] text-black"
-                }`}
+                className={`rounded-xl px-4 py-3.5 text-base pr-14 leading-tight ${isDarkMode
+                  ? "bg-[#1D1E20] text-white"
+                  : "bg-[#F2F5FA] text-black"
+                  }`}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword((prev) => !prev)}
                 style={{ position: "absolute", right: 14, top: 14 }}
               >
-                <Ionicons
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={22}
-                  color={isDarkMode ? "#6B7280" : "#9CA3AF"}
-                />
+              <MaterialIcons
+                name={showPassword ? "visibility" : "visibility-off"}
+                size={20}
+                color={isDarkMode ? "white" : "black"}
+              />
               </TouchableOpacity>
             </View>
             {errors.password ? <Text className="text-red-500 text-xs mb-3 ml-1">{errors.password}</Text> : null}
@@ -242,9 +233,8 @@ const Login: React.FC = () => {
               onPress={handleLogin}
               disabled={loading}
               style={{ opacity: loading ? 0.7 : 1 }}
-              className={`rounded-xl py-3.5 items-center mb-4 ${
-                isDarkMode ? "bg-[#1A6EDE]" : "bg-black"
-              }`}
+              className={`rounded-xl py-3.5 items-center mt-6 mb-4 ${isDarkMode ? "bg-[#1A6EDE]" : "bg-black"
+                }`}
             >
               {loading ? (
                 <ActivityIndicator color="#ffffff" />
@@ -284,3 +274,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+

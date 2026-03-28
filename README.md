@@ -82,6 +82,7 @@ cd GocialFrontMobile
 yarn install
 npx react-native run-android    # Android
 npx react-native run-ios        # iOS
+npx react-native start --reset-cache #metro
 ```
 
 > L'émulateur Android ne peut pas accéder à `localhost` directement — l'app utilise `10.0.2.2:5000` automatiquement. Pour un appareil physique, modifier l'IP dans `src/config.ts`.

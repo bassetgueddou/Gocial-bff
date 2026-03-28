@@ -3,12 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import PhoneInput from "../../src/components/PhoneInput";
+import AddressAutocomplete from "../../src/components/AddressAutocomplete";
 import { StackNavigationProp } from "@react-navigation/stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import Toast from "react-native-toast-message";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { authService } from "../../src/services/auth";
-import type { InlineErrors } from "../../src/types";
+import { useTheme } from "../ThemeContext";
+import type { InlineErrors, AddressAutocompleteResult } from "../../src/types";
 
 const getPasswordStrength = (pwd: string): number => {
     let score = 0;
@@ -36,6 +38,7 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 const RegisterPerson: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const { register } = useAuth();
+    const { isDarkMode } = useTheme();
     const [selectedGender, setSelectedGender] = useState<"female" | "male" | "non-binary" | null>("female");
     const [phoneNumber, setPhoneNumber] = useState<string>("");
     const [formattedNumber, setFormattedNumber] = useState<string>("");
@@ -152,6 +155,10 @@ const RegisterPerson: React.FC = () => {
     const passwordStrength = getPasswordStrength(password);
 
     const clearError = (field: string) => setErrors(prev => ({ ...prev, [field]: '' }));
+
+    const handleCitySelect = (result: AddressAutocompleteResult) => {
+        setCity(result.city || result.address);
+    };
 
     const parseBackendError = (message: string): Partial<InlineErrors> => {
         const lower = message.toLowerCase();
@@ -281,11 +288,12 @@ const RegisterPerson: React.FC = () => {
                     <Text className="text-base font-medium">
                         Ville <Text className="text-red-700">*</Text>
                     </Text>
-                    <TextInput
-                        value={city}
-                        onChangeText={setCity}
-                        placeholder=""
-                        className="border border-gray-300 rounded-md px-4 py-3 mt-2"
+                    <AddressAutocomplete
+                        onSelect={handleCitySelect}
+                        placeholder="Rechercher une ville"
+                        isDarkMode={isDarkMode}
+                        initialValue={city}
+                        className="mt-2"
                     />
                     <Text className="text-sm mt-1">Hâte de proposer des activités autour de chez toi !</Text>
                 </View>

@@ -3,11 +3,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../ThemeContext";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
 import { useCreateActivity } from "../../../src/contexts/CreateActivityContext";
+import AddressAutocomplete from "../../../src/components/AddressAutocomplete";
+import type { AddressAutocompleteResult } from "../../../src/types";
 
 const ProgressBar = ({ current, total }: { current: number; total: number }) => {
     const { isDarkMode } = useTheme();
@@ -34,19 +36,41 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 const CAVisioInformation: React.FC = () => {
     const { isDarkMode } = useTheme();
     const navigation = useNavigation<NavigationProp>();
-    const { updateForm } = useCreateActivity();
+    const { updateForm, formData } = useCreateActivity();
 
     const [selectedOption, setSelectedOption] = useState<"partout" | "ville">("partout");
-    const [city, setCity] = useState("");
+    const [city, setCity] = useState(formData.city || "");
 
-    const [showPicker, setShowPicker] = useState(false);
-    const [date, setDate] = useState<Date | null>(null);
-    const [link, setLink] = useState("");
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+    const [date, setDate] = useState<Date | null>(formData.date ? new Date(formData.date) : null);
+    const [link, setLink] = useState(formData.visio_link || "");
 
-    const onChange = (_event: any, selectedDate?: Date) => {
-        setShowPicker(false);
+    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+        setShowDatePicker(false);
+        if (event.type === 'dismissed') return;
         if (selectedDate) {
-            setDate(selectedDate);
+            const newDate = date ? new Date(date) : new Date();
+            newDate.setFullYear(selectedDate.getFullYear());
+            newDate.setMonth(selectedDate.getMonth());
+            newDate.setDate(selectedDate.getDate());
+            setDate(newDate);
+            updateForm({ date: newDate.toISOString() });
+            if (Platform.OS === 'android') {
+                setShowTimePicker(true);
+            }
+        }
+    };
+
+    const onTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+        setShowTimePicker(false);
+        if (event.type === 'dismissed') return;
+        if (selectedTime) {
+            const newDate = date ? new Date(date) : new Date();
+            newDate.setHours(selectedTime.getHours());
+            newDate.setMinutes(selectedTime.getMinutes());
+            setDate(newDate);
+            updateForm({ date: newDate.toISOString() });
         }
     };
 
@@ -118,12 +142,14 @@ const CAVisioInformation: React.FC = () => {
                 )}
                 {selectedOption === "ville" && (
                     <View className={`${isDarkMode ? "bg-black" : "bg-gray-100"} p-3 rounded-md space-x-2 mb-4`}>
-                        <TextInput
+                        <AddressAutocomplete
+                            onSelect={(result: AddressAutocompleteResult) => {
+                                setCity(result.city || result.address);
+                                updateForm({ city: result.city || result.address });
+                            }}
                             placeholder="Rechercher une ville"
-                            placeholderTextColor={isDarkMode ? "#9EA1AB" : "black"}
-                            className={`${isDarkMode ? "bg-[#1D1E20] text-white border-white" : "bg-white text-black border-[#065C98]"} border rounded-md px-4 py-3`}
-                            value={city}
-                            onChangeText={setCity}
+                            isDarkMode={isDarkMode}
+                            initialValue={city}
                         />
                     </View>
                 )}
@@ -137,7 +163,7 @@ const CAVisioInformation: React.FC = () => {
 
                         <View className={`${isDarkMode ? "bg-black" : "bg-gray-100"} p-3 rounded-md`}>
                             <TouchableOpacity
-                                onPress={() => setShowPicker(true)}
+                                onPress={() => setShowDatePicker(true)}
                                 className={`flex-row justify-between items-center border rounded-md px-4 py-3 ${isDarkMode ? "bg-[#1D1E20] border-white" : "bg-white border-[#065C98]"}`}
                             >
                                 <Text className={`text-base ${isDarkMode ? "text-[#9EA1AB]" : ""}`}>Date & Heure</Text>
@@ -145,15 +171,43 @@ const CAVisioInformation: React.FC = () => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Native DateTime Picker */}
-                        {showPicker && (
+                        {/* iOS : picker datetime unique */}
+                        {Platform.OS === 'ios' && showDatePicker && (
                             <DateTimePicker
                                 mode="datetime"
-                                display={Platform.OS === "ios" ? "spinner" : "default"}
+                                display="spinner"
                                 value={date || new Date()}
-                                onChange={onChange}
+                                onChange={(event, selectedDate) => {
+                                    setShowDatePicker(false);
+                                    if (event.type === 'dismissed') return;
+                                    if (selectedDate) {
+                                        setDate(selectedDate);
+                                        updateForm({ date: selectedDate.toISOString() });
+                                    }
+                                }}
                                 minimumDate={new Date()}
                                 textColor={isDarkMode ? "white" : ""}
+                            />
+                        )}
+
+                        {/* Android : date picker (étape 1) */}
+                        {Platform.OS === 'android' && showDatePicker && (
+                            <DateTimePicker
+                                mode="date"
+                                display="default"
+                                value={date || new Date()}
+                                onChange={onDateChange}
+                                minimumDate={new Date()}
+                            />
+                        )}
+
+                        {/* Android : time picker (étape 2, après sélection de la date) */}
+                        {Platform.OS === 'android' && showTimePicker && (
+                            <DateTimePicker
+                                mode="time"
+                                display="default"
+                                value={date || new Date()}
+                                onChange={onTimeChange}
                             />
                         )}
                     </View>

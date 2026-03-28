@@ -244,6 +244,7 @@ export interface CreateActivityData {
   price?: number;
   visibility?: 'public' | 'friends' | 'private';
   is_girls_only?: boolean;
+  gender_restriction?: 'all' | 'female' | 'male';
   require_approval?: boolean;
   address?: string;
   city?: string;
@@ -251,6 +252,7 @@ export interface CreateActivityData {
   latitude?: number;
   longitude?: number;
   visio_link?: string;
+  meeting_point?: string;
 }
 
 export interface ActivitiesResponse {

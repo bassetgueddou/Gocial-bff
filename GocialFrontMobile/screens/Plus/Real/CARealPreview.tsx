@@ -55,9 +55,11 @@ const CARealPreview: React.FC = () => {
                 category: formData.category,
                 max_participants: formData.max_participants,
                 visibility: formData.visibility as 'public' | 'friends' | 'private' | undefined,
+                gender_restriction: formData.genderRestriction as 'all' | 'female' | 'male' | undefined,
                 require_approval: formData.require_approval,
                 address: formData.address,
                 city: formData.city,
+                meeting_point: formData.meetingPoint,
             });
 
             // Upload activity image if one was selected

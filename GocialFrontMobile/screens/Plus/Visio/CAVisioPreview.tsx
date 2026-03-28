@@ -62,6 +62,7 @@ const CAVisioPreview: React.FC = () => {
                 category: formData.category,
                 max_participants: formData.max_participants,
                 visibility: formData.visibility as 'public' | 'friends' | 'private' | undefined,
+                gender_restriction: formData.genderRestriction as 'all' | 'female' | 'male' | undefined,
                 require_approval: formData.require_approval,
                 visio_link: formData.visio_link,
                 city: formData.city,
