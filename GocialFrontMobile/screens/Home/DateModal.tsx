@@ -7,8 +7,13 @@ import {
   Dimensions,
 } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+} from "react-native-reanimated";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../ThemeContext";
 import { useFilters } from "../../src/contexts/FilterContext";
 import EventCardReal from "./EventCardReal";
@@ -33,6 +38,22 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose, activities = []
   const [selectedMonth, setSelectedMonth] = useState<number>(today.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(today.getFullYear());
 
+  // Animation values
+  const translateY = useSharedValue(0);
+  const CLOSE_THRESHOLD = 150;
+  const VELOCITY_THRESHOLD = 500;
+
+  const handleCloseModal = () => {
+    // Animate out and close
+    translateY.value = withTiming(height, { duration: 200 }, () => {
+      runOnJS(onClose)();
+    });
+  };
+
+  const handleReset = () => {
+    translateY.value = withTiming(0, { duration: 300 });
+  };
+
   const goToPreviousMonth = () => {
     if (month === 0) {
       setMonth(11);
@@ -51,11 +72,25 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose, activities = []
     }
   };
 
-  const panGesture = Gesture.Pan().onUpdate((event) => {
-    if (event.translationY > 100) {
-      runOnJS(onClose)();
-    }
-  });
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      // Limiter le mouvement vers le haut (on peut juste remonter un peu)
+      if (event.translationY < -50) {
+        translateY.value = -50;
+      } else if (event.translationY > 0) {
+        // Permettre le mouvement vers le bas
+        translateY.value = event.translationY;
+      }
+    })
+    .onEnd((event) => {
+      // Vérifier si on a atteint le seuil de fermeture (distance ou vélocité)
+      if (event.translationY > CLOSE_THRESHOLD || event.velocityY > VELOCITY_THRESHOLD) {
+        runOnJS(handleCloseModal)();
+      } else {
+        // Revenir à la position initiale
+        runOnJS(handleReset)();
+      }
+    });
 
   const monthNames = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -67,7 +102,18 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose, activities = []
   const firstDayOffset: number = (firstDay.getDay() + 6) % 7;
   const totalDays: number = new Date(year, month + 1, 0).getDate();
 
-  // Extraire les jours ayant une activite pour un mois donne
+  // Style animé pour la modal
+  const animatedModalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  // Réinitialiser l'animation quand la modal s'ouvre
+  React.useEffect(() => {
+    if (visible) {
+      translateY.value = height;
+      translateY.value = withTiming(0, { duration: 500 });
+    }
+  }, [visible]);
   const getEventDaysForMonth = (m: number, y: number): number[] => {
     const days = new Set<number>();
     activities.forEach((a) => {
@@ -92,10 +138,12 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose, activities = []
   }, [activities, selectedDay, selectedMonth, selectedYear]);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="none" transparent>
       <GestureDetector gesture={panGesture}>
         <View className="flex-1 justify-end bg-black/50">
-          <View className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
+          <Animated.View
+            style={[animatedModalStyle]}
+            className={`w-full h-[92%] ${isDarkMode ? "bg-black" : "bg-white"} rounded-t-2xl p-5`}>
             {/* Barre pour glisser */}
             <View className="items-center mb-3">
               <View className="w-10 h-1 bg-gray-400 rounded-full" />
@@ -269,7 +317,7 @@ const DateModal: React.FC<DateModalProps> = ({ visible, onClose, activities = []
                 <Text className="text-white text-base ml-2">Rechercher</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </GestureDetector>
     </Modal>
