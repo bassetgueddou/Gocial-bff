@@ -8,6 +8,7 @@ import { launchImageLibrary } from "react-native-image-picker";
 import Toast from "react-native-toast-message";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { userService } from "../../src/services/users";
+import { compressImageIfNeeded } from "../../src/utils/imageUtils";
 import type { RegisterData } from "../../src/types";
 
 type RootStackParamList = {
@@ -29,27 +30,37 @@ const AddProfilePhotoPerson: React.FC = () => {
 
     const registerData = route.params?.registerData;
 
-    const handlePress = () => {
-        launchImageLibrary(
-            { mediaType: "photo", quality: 0.8, selectionLimit: 1 },
-            (response) => {
-                if (response.didCancel) return;
-                if (response.errorCode) {
-                    Toast.show({
-                        type: "error",
-                        text1: "Erreur",
-                        text2: response.errorMessage || "Impossible d'ouvrir la galerie.",
-                        position: "top",
-                        topOffset: 60,
-                    });
-                    return;
-                }
-                const asset = response.assets?.[0];
-                if (asset?.uri) {
-                    setSelectedImage(asset.uri);
-                }
+    const handlePress = async () => {
+        const response = await launchImageLibrary({
+            mediaType: "photo", quality: 0.8, selectionLimit: 1,
+        });
+        if (response.didCancel) return;
+        if (response.errorCode) {
+            Toast.show({
+                type: "error",
+                text1: "Erreur",
+                text2: response.errorMessage || "Impossible d'ouvrir la galerie.",
+                position: "top",
+                topOffset: 60,
+            });
+            return;
+        }
+        const asset = response.assets?.[0];
+        if (asset?.uri) {
+            try {
+                const uri = await compressImageIfNeeded(asset.uri, asset.fileSize);
+                setSelectedImage(uri);
+            } catch (err: unknown) {
+                Toast.show({
+                    type: "error",
+                    text1: "Image trop volumineuse",
+                    text2: err instanceof Error ? err.message : "Impossible de compresser l'image.",
+                    position: "top",
+                    topOffset: 60,
+                    visibilityTime: 4000,
+                });
             }
-        );
+        }
     };
 
     const handleFinish = async () => {

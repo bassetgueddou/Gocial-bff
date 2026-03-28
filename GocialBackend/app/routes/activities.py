@@ -487,14 +487,12 @@ def upload_activity_image(activity_id):
     if not allowed_file(file.filename):
         return jsonify({'error': 'Type de fichier non autorisé (JPEG, PNG, GIF, WebP acceptés)'}), 400
 
-    # Check file size (max 16 MB) — Flask MAX_CONTENT_LENGTH handles this
-    # at the request level, but we double-check here for safety
+    # Vérifier la taille du fichier (max 300 Ko)
     file.seek(0, os.SEEK_END)
     file_size = file.tell()
     file.seek(0)
-    max_size = 16 * 1024 * 1024  # 16 MB
-    if file_size > max_size:
-        return jsonify({'error': 'Le fichier est trop volumineux (max 16 Mo)'}), 400
+    if file_size > 300 * 1024:
+        return jsonify({'error': "L'image est trop volumineuse (max 300 Ko)"}), 400
 
     # Generate a UUID-based filename
     ext = file.filename.rsplit('.', 1)[1].lower()

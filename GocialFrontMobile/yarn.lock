@@ -8013,6 +8013,7 @@ __metadata:
     react-dom: "npm:^19.0.0"
     react-native: "npm:0.78.0"
     react-native-calendars: "npm:1.1310.0"
+    react-native-compressor: "npm:^1.16.0"
     react-native-gesture-handler: "npm:2.24.0"
     react-native-image-picker: "npm:^8.2.1"
     react-native-linear-gradient: "npm:2.8.3"
@@ -11705,6 +11706,16 @@ __metadata:
     moment:
       optional: true
   checksum: 10c0/8a461c28b92c06074d7591511d8f63901adb44e693f9d9d36cbaff7a81743874e1f42acd064121b7c5e06814a889b1694504c1c027ff98424128d053e1bd5724
+  languageName: node
+  linkType: hard
+
+"react-native-compressor@npm:^1.16.0":
+  version: 1.16.0
+  resolution: "react-native-compressor@npm:1.16.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/a9adac2948df4ef465c82aea8bebf32c4a91bdc0a12d1568dfac3ebf507e97bb47ba6975cc766231bcaeb803918f3d8d136b630e7d8f085823145703644871f6
   languageName: node
   linkType: hard
 

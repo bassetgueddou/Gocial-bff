@@ -8,6 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import { launchImageLibrary } from "react-native-image-picker";
 import Toast from "react-native-toast-message";
 import { useCreateActivity } from "../../src/contexts/CreateActivityContext";
+import { compressImageIfNeeded } from "../../src/utils/imageUtils";
 
 const ProgressBar = ({ current, total }: { current: number; total: number }) => {
     const { isDarkMode } = useTheme();
@@ -39,35 +40,39 @@ const CATitle: React.FC = () => {
     const [title, setTitle] = useState(formData.title || '');
     const [description, setDescription] = useState(formData.description || '');
     const [imageUri, setImageUri] = useState<string | null>(formData.imageUri || null);
-    const [imageTooLarge, setImageTooLarge] = useState(false);
 
-    const handlePickImage = () => {
-        launchImageLibrary(
-            { mediaType: "photo", quality: 0.8, selectionLimit: 1 },
-            (response) => {
-                if (response.didCancel) return;
-                if (response.errorCode) {
-                    Toast.show({
-                        type: "error",
-                        text1: "Erreur",
-                        text2: response.errorMessage || "Impossible d'ouvrir la galerie.",
-                        position: "top",
-                        topOffset: 60,
-                    });
-                    return;
-                }
-                const asset = response.assets?.[0];
-                if (asset?.uri) {
-                    const uri = Platform.OS === "android" ? asset.uri : asset.uri;
-                    setImageUri(uri);
-                    updateForm({ imageUri: uri });
-
-                    // Check file size (300 KB = 307200 bytes)
-                    const fileSize = asset.fileSize ?? 0;
-                    setImageTooLarge(fileSize > 307200);
-                }
+    const handlePickImage = async () => {
+        const response = await launchImageLibrary({
+            mediaType: "photo", quality: 0.8, selectionLimit: 1,
+        });
+        if (response.didCancel) return;
+        if (response.errorCode) {
+            Toast.show({
+                type: "error",
+                text1: "Erreur",
+                text2: response.errorMessage || "Impossible d'ouvrir la galerie.",
+                position: "top",
+                topOffset: 60,
+            });
+            return;
+        }
+        const asset = response.assets?.[0];
+        if (asset?.uri) {
+            try {
+                const uri = await compressImageIfNeeded(asset.uri, asset.fileSize);
+                setImageUri(uri);
+                updateForm({ imageUri: uri });
+            } catch (err: unknown) {
+                Toast.show({
+                    type: "error",
+                    text1: "Image trop volumineuse",
+                    text2: err instanceof Error ? err.message : "Impossible de compresser l'image.",
+                    position: "top",
+                    topOffset: 60,
+                    visibilityTime: 4000,
+                });
             }
-        );
+        }
     };
 
     return (
@@ -147,13 +152,6 @@ const CATitle: React.FC = () => {
                             className="w-full h-56"
                             resizeMode="cover"
                         />
-                        {imageUri && imageTooLarge && (
-                            <>
-                                <Text className="px-2 mt-1 text-[#FF0000]">Ton image dépasse 300ko !</Text>
-                                <Text className="px-2 mt-1 text-[#FF0000]">(Choisis une autre image, ou compresse celle-ci)</Text>
-                            </>
-                        )}
-
                         {/* Bouton d'édition */}
                         <TouchableOpacity onPress={handlePickImage} className="absolute top-2 left-2 bg-[#D9D9D9] rounded-xl p-2">
                             <Image source={require("../../img/add-img.png")} className="h-8 w-8" />
