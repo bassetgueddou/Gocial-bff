@@ -125,7 +125,7 @@ def register():
             # Quick age check - must be at least 18
             age = (datetime.utcnow().date() - user.birth_date).days // 365
             if age < 18:
-                return jsonify({'error': 'Vous devez avoir au moins 18 ans'}), 400
+                return jsonify({'error': 'Tu dois avoir au moins 18 ans'}), 400
         except ValueError:
             return jsonify({'error': 'Format de date invalide (AAAA-MM-JJ attendu)'}), 400
     
