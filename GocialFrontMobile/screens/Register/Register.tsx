@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import { useTheme } from "../ThemeContext";
 
 // Définition des noms d'écrans dans le Stack.Navigator
 type RootStackParamList = {
@@ -19,12 +20,13 @@ type NavigationProp = StackNavigationProp<RootStackParamList>;
 const Register: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const [selected, setSelected] = useState<"person" | "pro" | null>("person");
+    const { isDarkMode } = useTheme();
 
     return (
-        <SafeAreaView className={`flex-1 bg-white px-6`} accessible={true}>
+        <SafeAreaView className={`flex-1 px-6 ${isDarkMode ? "bg-black" : "bg-white"}`} accessible={true}>
             {/* Header */}
             <View className={`relative py-4 mt-8`}>
-                <Text className={`text-xl font-semibold absolute left-1/2 -translate-x-1/2`}
+                <Text className={`text-xl font-semibold absolute left-1/2 -translate-x-1/2 ${isDarkMode ? "text-white" : "text-black"}`}
                     accessibilityRole="header">
                     Inscription
                 </Text>
@@ -34,13 +36,13 @@ const Register: React.FC = () => {
                     accessibilityRole="button"
                     onPress={() => navigation.navigate("Login")}
                 >
-                    <MaterialIcons name="close" size={25} color="black" />
+                    <MaterialIcons name="close" size={25} color={isDarkMode ? "white" : "black"} />
                 </TouchableOpacity>
             </View>
 
             {/* Question */}
             <View className={`flex-1 justify-center items-center`} accessible={true}>
-                <Text className={`text-lg font-medium`} accessibilityRole="text">
+                <Text className={`text-lg font-medium ${isDarkMode ? "text-white" : "text-black"}`} accessibilityRole="text">
                     Qui es-tu ?
                 </Text>
 
@@ -52,11 +54,14 @@ const Register: React.FC = () => {
                         accessibilityLabel="Une Personne"
                         accessibilityRole="radio"
                         aria-checked={selected === "person"}
-                        className={`px-8 py-3 rounded-md ${selected === "person" ? "bg-[#2C5B90]" : "border border-[#2C5B90]"
+                        className={`px-8 py-3 rounded-md ${selected === "person" ?
+                            isDarkMode ? "bg-[#1A6EDE]" : "bg-[#2C5B90]"
+                            : isDarkMode ? "border border-[#1A6EDE]" : "border border-[#2C5B90]"
                             }`}
                     >
                         <Text
-                            className={`text-base font-medium ${selected === "person" ? "text-white" : "text-[#2C5B90]"
+                            className={`text-base font-medium ${selected === "person" ? "text-white"
+                                : isDarkMode ? 'text-white' : "text-[#2C5B90]"
                                 }`}
                         >
                             Une Personne
@@ -69,11 +74,13 @@ const Register: React.FC = () => {
                         accessibilityLabel="Un Pro/Asso"
                         accessibilityRole="radio"
                         aria-checked={selected === "pro"}
-                        className={`px-8 py-3 rounded-md ${selected === "pro" ? "bg-[#2C5B90]" : "border border-[#2C5B90]"
+                        className={`px-8 py-3 rounded-md ${selected === "pro" 
+                            ? isDarkMode ? "bg-[#1A6EDE]" : "bg-[#2C5B90]"
+                            : isDarkMode ? "border border-[#1A6EDE]" : "border border-[#2C5B90]"
                             }`}
                     >
                         <Text
-                            className={`text-base font-medium ${selected === "pro" ? "text-white" : "text-[#2C5B90]"
+                            className={`text-base font-medium ${selected === "pro" ? "text-white" : isDarkMode ? 'text-white' : "text-[#1A6EDE]"
                                 }`}
                         >
                             Un Pro / Asso
@@ -85,7 +92,7 @@ const Register: React.FC = () => {
             {/* Bouton Suivant */}
             <View className={`pb-6`}>
                 <TouchableOpacity
-                    className={`w-full bg-[#2C5B90] py-4 rounded-md`}
+                    className={`w-full ${isDarkMode ? "bg-[#1A6EDE]" : "bg-[#2C5B90]"} py-4 rounded-md`}
                     accessibilityLabel="Bouton suivant pour continuer l'inscription"
                     accessibilityRole="button"
                     onPress={() => {

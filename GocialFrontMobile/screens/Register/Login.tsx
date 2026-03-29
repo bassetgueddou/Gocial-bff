@@ -191,7 +191,6 @@ const Login: React.FC = () => {
                 setErrorMessage(null);
                 clearError('email');
               }}
-              placeholderTextColor={isDarkMode ? "#6B7280" : "#9CA3AF"}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -212,7 +211,6 @@ const Login: React.FC = () => {
                   setErrorMessage(null);
                   clearError('password');
                 }}
-                placeholderTextColor={isDarkMode ? "#6B7280" : "#9CA3AF"}
                 secureTextEntry={!showPassword}
                 className={`rounded-xl px-4 py-3.5 text-base pr-14 leading-tight ${isDarkMode
                   ? "bg-[#1D1E20] text-white"
@@ -260,7 +258,7 @@ const Login: React.FC = () => {
 
             {/* Pas de compte */}
             <View className="items-center pb-8">
-              <Text className="text-gray-500 text-sm text-center">
+              <Text className={`text-sm text-center ${isDarkMode ? "text-[#777E8D]" : "text-gray-500"}`}>
                 Pas de compte ?{" "}
                 <Text
                   className={`underline ${isDarkMode ? "text-[#1A6EDE]" : "text-[#065C98]"}`}
