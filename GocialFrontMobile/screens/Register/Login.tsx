@@ -128,7 +128,7 @@ const Login: React.FC = () => {
             {/* Logo + sous-titre */}
             <View className="items-center mb-10 mt-8">
               <Image
-                source={require('../../img/ic_launcher.png')}
+                source={isDarkMode ? require('../../img/ic_launcher-dark.png') : require('../../img/ic_launcher.png')}
                 className="w-36 h-36 rounded-2xl"
                 resizeMode="contain"
               />
@@ -137,7 +137,7 @@ const Login: React.FC = () => {
               >
                 Gocial
               </Text>
-              <Text className="text-gray-500 text-sm text-center mt-2">
+              <Text className={`${isDarkMode ? "text-[#777E8D]" : "text-gray-500"} text-sm text-center mt-2`}>
                 Rejoignez la communauté
               </Text>
             </View>
@@ -165,11 +165,11 @@ const Login: React.FC = () => {
             {/* Séparateur */}
             <View className="flex-row items-center my-5">
               <View
-                className={`flex-1 h-px ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}
+                className={`flex-1 h-px ${isDarkMode ? "bg-[#69768C]" : "bg-gray-200"}`}
               />
-              <Text className="mx-3 text-gray-600 text-sm">ou</Text>
+              <Text className={`mx-3 ${isDarkMode ? "text-[#69768C]" : "text-gray-600"} text-sm`}>ou</Text>
               <View
-                className={`flex-1 h-px ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}
+                className={`flex-1 h-px ${isDarkMode ? "bg-[#69768C]" : "bg-gray-200"}`}
               />
             </View>
 
@@ -182,7 +182,7 @@ const Login: React.FC = () => {
               </View>
             ) : null}
 
-            <Text className="mb-1 ml-1">Adresse email</Text>
+            <Text className={`mb-1 ml-1 ${isDarkMode ? "text-white" : "text-black"}`}>Adresse email</Text>
             {/* Input email */}
             <TextInput
               value={email}
@@ -202,7 +202,7 @@ const Login: React.FC = () => {
             />
             {errors.email ? <Text className="text-red-500 text-xs mb-3 ml-1">{errors.email}</Text> : null}
 
-            <Text className="mb-1 ml-1">Mot de passe</Text>
+            <Text className={`mb-1 ml-1 ${isDarkMode ? "text-white" : "text-black"}`}>Mot de passe</Text>
             {/* Input mot de passe */}
             <View className={`relative ${errors.password ? 'mb-1' : 'mb-4'}`}>
               <TextInput
