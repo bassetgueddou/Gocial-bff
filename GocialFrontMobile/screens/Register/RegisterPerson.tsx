@@ -109,7 +109,7 @@ const RegisterPerson: React.FC = () => {
         }
 
         if (age < 18) {
-            setErrors(prev => ({ ...prev, birth_date: 'Tu dois avoir au moins 18 ans' }));
+            setErrors(prev => ({ ...prev, birth_date: 'Tu dois avoir au moins 18 ans 🥲' }));
             setBirthDate('');
             return;
         }
@@ -242,10 +242,8 @@ const RegisterPerson: React.FC = () => {
                             className="flex-1 ml-2 py-3"
                         />
                     </View>
-                    {errors.birth_date ? (
+                    {errors.birth_date && (
                         <Text className="text-red-700 text-xs mt-1 ml-1">{errors.birth_date}</Text>
-                    ) : (
-                        <Text className="text-sm mt-1">Tu dois avoir au moins 18 ans</Text>
                     )}
                 </View>
 
